@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Renee</string>
+    <string name="step_credential_access_key">Access Key</string>
+    <string name="step_credential_secret_key">Secret Key</string>
+</resources>

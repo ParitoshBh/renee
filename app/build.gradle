@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.bugsnag.android.gradle'
 
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
@@ -14,6 +15,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders = [ BUGSNAP_API:getApiKey()]
     }
     buildTypes {
         release {
@@ -50,8 +52,16 @@ dependencies {
     implementation 'com.mikepenz:materialdrawer:7.0.0-rc07'
     implementation 'com.mikepenz:fastadapter-extensions-expandable:4.0.1'
     implementation "com.mikepenz:materialize:1.2.1"
+    implementation "com.mikepenz:fastadapter-extensions-ui:4.0.1"
     implementation 'com.mikepenz:fastadapter-extensions-utils:4.0.1'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
     implementation 'io.paperdb:paperdb:2.6'
     implementation 'com.ernestoyaquello.stepperform:vertical-stepper-form:2.2.1'
+    implementation 'com.bugsnag:bugsnag-android:4.+'
+}
+
+def static getApiKey(){
+    def Properties props = new Properties()
+    props.load(new FileInputStream(new File('secrets.properties')))
+    return props['BUGSNAG_API']
 }

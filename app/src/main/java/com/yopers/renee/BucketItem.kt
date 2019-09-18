@@ -1,9 +1,12 @@
 package com.yopers.renee
 
+import android.graphics.Color
 import android.view.View
 import android.widget.TextView
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.items.AbstractItem
+import com.mikepenz.fastadapter.ui.utils.FastAdapterUIUtils
+import com.mikepenz.materialize.util.UIUtils
 
 open class BucketItem : AbstractItem<BucketItem.ViewHolder>() {
     var name: String? = null
@@ -27,11 +30,17 @@ open class BucketItem : AbstractItem<BucketItem.ViewHolder>() {
         return ViewHolder(v)
     }
 
-    class ViewHolder(view: View) : FastAdapter.ViewHolder<BucketItem>(view) {
+    class ViewHolder(private var view: View) : FastAdapter.ViewHolder<BucketItem>(view) {
         var name: TextView = view.findViewById(R.id.item_number)
         var isDir: TextView = view.findViewById(R.id.isDirectory)
 
         override fun bindView(item: BucketItem, payloads: MutableList<Any>) {
+            //get the context
+            val ctx = itemView.context
+
+            //set the background for the item
+            UIUtils.setBackground(view, FastAdapterUIUtils.getSelectableBackground(ctx, R.attr.colorPrimary, true))
+
             name.text = item.name
             isDir.text = item.isDir.toString()
         }

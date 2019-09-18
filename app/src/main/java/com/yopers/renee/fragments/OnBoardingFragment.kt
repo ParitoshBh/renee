@@ -62,13 +62,19 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
     override fun onCompletedForm() {
         GlobalScope.launch(Dispatchers.Main) {
             llProgressBar.visibility = View.VISIBLE
+            val minioClient = MinioClient(
+                endpointStep.userNameView.text.toString(),
+                credentialStep.credentialsView.accessKey.text.toString(),
+                credentialStep.credentialsView.secretKey.text.toString()
+            )
             val buckets = pingHost(
+                minioClient,
                 endpointStep.userNameView.text.toString(),
                 credentialStep.credentialsView.accessKey.text.toString(),
                 credentialStep.credentialsView.secretKey.text.toString())
             if (buckets.isNotEmpty()) {
                 val parentActivity = (activity as MainActivity)
-                parentActivity.initNavigationDrawer()
+                parentActivity.minioClient = minioClient
                 parentActivity.loadFragment("yoga", "replace", buckets)
                 llProgressBar.visibility = View.INVISIBLE
             }
@@ -79,9 +85,9 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private suspend fun pingHost(endpoint: String, accessKey: String, secretKey: String): List<Bucket> {
+    private suspend fun pingHost(minioClient: MinioClient, endpoint: String, accessKey: String, secretKey: String): List<Bucket> {
         return withContext(Dispatchers.IO) {
-            val buckets = MinioClient(endpoint, accessKey, secretKey).listBuckets()
+            val buckets = minioClient.listBuckets()
             if (buckets.isNotEmpty()) {
                 Paper.book().write("userConfig", mapOf<String, String>(
                     "endpoint" to endpoint,

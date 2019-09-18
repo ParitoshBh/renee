@@ -11,6 +11,7 @@ import com.mikepenz.fastadapter.IAdapter
 import com.mikepenz.fastadapter.adapters.ItemAdapter
 import com.mikepenz.fastadapter.helpers.ActionModeHelper
 import com.mikepenz.fastadapter.select.getSelectExtension
+import com.mikepenz.materialize.util.UIUtils
 import io.minio.MinioClient
 import io.minio.Result
 import io.minio.messages.Item
@@ -71,11 +72,11 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
         }
 
         fastAdapter.onLongClickListener = { view, adapter, item, position ->
-            if (item.isSelected) {
-                view.setBackgroundColor(Color.GREEN)
-            } else {
-                view.setBackgroundColor(Color.TRANSPARENT)
-            }
+//            if (item.isSelected) {
+//                view.setBackgroundColor(Color.TRANSPARENT)
+//            } else {
+//                view.setBackgroundColor(Color.GREEN)
+//            }
             false
         }
 
@@ -89,8 +90,14 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
         fastAdapter.onPreLongClickListener = { _: View, _: IAdapter<BucketItem>, _: BucketItem, position: Int ->
             val actionMode = mActionModeHelper.onLongClick(activity as MainActivity, position)
             if (actionMode != null) {
-                //we want color our CAB
-//                findViewById<View>(R.id.action_mode_bar).setBackgroundColor(UIUtils.getThemeColorFromAttrOrRes(this@MultiselectSampleActivity, R.attr.colorPrimary, R.color.material_drawer_primary))
+                //Color our CAB
+                activity!!
+                    .findViewById<View>(R.id.action_mode_bar)
+                    .setBackgroundColor(UIUtils.getThemeColorFromAttrOrRes(
+                        activity as MainActivity,
+                        R.attr.colorPrimary,
+                        R.color.material_drawer_primary
+                    ))
             }
             //if we have no actionMode we do not consume the event
             actionMode != null

@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setSupportActionBar(toolbar)
+        initNavigationDrawer()
 
         GlobalScope.launch(Dispatchers.Main) {
             userConfig = getUserConfigs()
@@ -55,8 +55,6 @@ class MainActivity : AppCompatActivity() {
             userConfig["secretKey"]
         )
 
-        initNavigationDrawer()
-
         GlobalScope.launch(Dispatchers.Main) {
             val buckets = getBuckets()
             val firstBucket = buckets[0].name()
@@ -65,6 +63,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun initNavigationDrawer() {
+        setSupportActionBar(toolbar)
+
         navigationDrawer = DrawerBuilder()
             .withActivity(this)
             .withToolbar(toolbar)

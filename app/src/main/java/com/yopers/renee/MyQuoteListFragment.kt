@@ -1,6 +1,5 @@
 package com.yopers.renee
 
-import android.graphics.Color
 import android.os.Bundle
 import android.view.*
 import androidx.appcompat.view.ActionMode
@@ -17,13 +16,16 @@ import io.minio.Result
 import io.minio.messages.Item
 import kotlinx.android.synthetic.main.myquote_list.*
 import moe.feng.common.view.breadcrumbs.BreadcrumbsView
+import moe.feng.common.view.breadcrumbs.DefaultBreadcrumbsCallback
 import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
+import timber.log.Timber
 
 class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
     var itemAdapter = ItemAdapter<BucketItem>()
     private lateinit var minioClient: MinioClient
     private lateinit var fastAdapter: FastAdapter<BucketItem>
     private lateinit var selectedBucket: String
+    private lateinit var selectedBucketPrefix: String
     private lateinit var toolbar: Toolbar
     private lateinit var mBreadcrumbsView: BreadcrumbsView
     private lateinit var mActionModeHelper: ActionModeHelper<BucketItem>
@@ -55,6 +57,7 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        Timber.tag("Minio: List Fragment")
 
         fastAdapter = FastAdapter.with(itemAdapter)
         fastAdapter.setHasStableIds(true)
@@ -82,7 +85,8 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
 
         fastAdapter.onClickListener = { view, adapter, item, position ->
             if (item.isDir as Boolean) {
-                loadBucketObjects(item.name.orEmpty())
+                selectedBucketPrefix = item.name.orEmpty()
+                loadBucketObjects(selectedBucketPrefix)
             }
             false
         }
@@ -109,26 +113,38 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
         toolbar = activity!!.findViewById(R.id.toolbar)
         mBreadcrumbsView = activity!!.findViewById(R.id.breadcrumbs_view)
 
-//        breadcrumbs_view.setCallback(object : DefaultBreadcrumbsCallback<BreadcrumbItem>() {
-//            override fun onNavigateBack(item: BreadcrumbItem, position: Int) {
-////                val nTask = BucketTask()
-////                nTask.rvList = list
-////                nTask.adapter = adapter
-////                nTask.bucket = bucket
-////                nTask.bucketPath = item.getSelectedItem()
-////                nTask.mToolbar = toolbar
-////                nTask.breadcrumbs_view = breadcrumbs_view
-////                nTask.execute(minioClient)
-//            }
-//
-//            override fun onNavigateNewLocation(newItem: BreadcrumbItem, changedPosition: Int) {
-////                println("Minio breadcrumb" + newItem.getSelectedItem())
-//            }
-//        })
+        mBreadcrumbsView.setCallback(object : DefaultBreadcrumbsCallback<BreadcrumbItem>() {
+            override fun onNavigateBack(item: BreadcrumbItem, position: Int) {
+                selectedBucketPrefix = buildUpdatedBucketPrefix(selectedBucketPrefix, item.selectedItem, position)
+                loadBucketObjects(selectedBucketPrefix)
+            }
+
+            override fun onNavigateNewLocation(newItem: BreadcrumbItem, changedPosition: Int) {
+//                println("Minio breadcrumb" + newItem.getSelectedItem())
+            }
+        })
 
         list.adapter = fastAdapter
 
         loadBucketObjects("")
+    }
+
+    private fun buildUpdatedBucketPrefix(selectedBucketPrefix: String, selectedCrumb: String, selectedCrumbPosition: Int): String {
+        var updatedPath = ""
+
+        if (selectedCrumbPosition != 0) {
+            val path = selectedBucketPrefix.split("/")
+            path.forEach {
+                if (it.isNotEmpty()) {
+                    updatedPath += "$it/"
+                    if (it.contentEquals(selectedCrumb)) {
+                        return updatedPath
+                    }
+                }
+            }
+        }
+
+        return updatedPath
     }
 
     private fun loadBucketObjects(selectedBucketPrefix: String) {
@@ -151,11 +167,13 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
     }
 
     private fun buildBreadcrumbs(bucketName: String, bucketPrefix: String) {
-        if (bucketPrefix.isEmpty()) {
+        if (bucketPrefix.isEmpty() && (mBreadcrumbsView.items.size == 0)) {
             mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem(bucketName))
         } else {
             val path = bucketPrefix.split('/')
-            mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem(path[path.size - 2]))
+            if (path.size >= 2 && !path[path.size - 2].contentEquals(mBreadcrumbsView.items.last().selectedItem.toString())) {
+                mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem(path[path.size - 2]))
+            }
         }
     }
 

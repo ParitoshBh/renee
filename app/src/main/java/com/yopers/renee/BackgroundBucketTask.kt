@@ -17,13 +17,9 @@ class BackgroundBucketTask(bucket: String, bucketPrefix: String, listener: DataL
         this.mBucketPrefix= bucketPrefix
     }
 
-//    lateinit var mToolbar: Toolbar
-//        lateinit var breadcrumbs_view: BreadcrumbsView
-
-
-//        override fun onPreExecute() {
-//            super.onPreExecute()
-//        }
+    override fun onPreExecute() {
+        super.onPreExecute()
+    }
 
     override fun doInBackground(vararg params: Any?): List<Result<Item>>? {
         val minioClient = params[0] as? MinioClient
@@ -36,8 +32,6 @@ class BackgroundBucketTask(bucket: String, bucketPrefix: String, listener: DataL
         this.mListener.onDataLoaded(result, mBucketPrefix, mBucket)
     }
 
-    //Your activity should implement this interface and override onDataLoaded() to
-    //to receive the result when this AsyncTask completes.
     interface DataLoadListener {
         fun onDataLoaded(results: List<Result<Item>>?, bucketPrefix: String, bucket: String)
     }

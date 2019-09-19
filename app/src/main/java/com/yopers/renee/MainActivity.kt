@@ -124,4 +124,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    override fun onBackPressed() {
+        //handle the back press, close the drawer first and if the drawer is closed close the activity
+        if (navigationDrawer.isDrawerOpen) {
+            navigationDrawer.closeDrawer()
+        } else {
+            super.onBackPressed()
+        }
+    }
 }

@@ -19,6 +19,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.content.Context
+import android.view.inputmethod.InputMethodManager
+
 
 class OnBoardingFragment: Fragment(), StepperFormListener {
     lateinit var endpointStep: EndpointStep
@@ -56,25 +59,30 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
         stepper_form
             .setup(this, endpointStep, credentialStep)
             .displayBottomNavigation(false)
+            .lastStepNextButtonText("Connect")
             .init()
     }
 
     override fun onCompletedForm() {
+        hideKeyboard()
         GlobalScope.launch(Dispatchers.Main) {
             llProgressBar.visibility = View.VISIBLE
-            val minioClient = MinioClient(
-                endpointStep.userNameView.text.toString(),
-                credentialStep.credentialsView.accessKey.text.toString(),
-                credentialStep.credentialsView.secretKey.text.toString()
+
+            val parentActivity = (activity as MainActivity)
+            val endpoint = endpointStep.userNameView.text.toString()
+            val accessKey = credentialStep.credentialsView.accessKey.text.toString()
+            val secretKey = credentialStep.credentialsView.secretKey.text.toString()
+
+            val userConfig = mapOf<String, String>(
+                "endpoint" to endpoint,
+                "accessKey" to accessKey,
+                "secretKey" to secretKey
             )
-            val buckets = pingHost(
-                minioClient,
-                endpointStep.userNameView.text.toString(),
-                credentialStep.credentialsView.accessKey.text.toString(),
-                credentialStep.credentialsView.secretKey.text.toString())
+            parentActivity.userConfig = userConfig
+            val minioClient  = parentActivity.buildMinioClient(userConfig)
+            val buckets = pingHost(minioClient, endpoint, accessKey, secretKey)
+
             if (buckets.isNotEmpty()) {
-                val parentActivity = (activity as MainActivity)
-                parentActivity.minioClient = minioClient
                 parentActivity.loadFragment("yoga", "replace", buckets)
                 llProgressBar.visibility = View.INVISIBLE
             }
@@ -99,5 +107,10 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
                 emptyList<Bucket>()
             }
         }
+    }
+
+    private fun hideKeyboard() {
+        val inputManager = context!!.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputManager.hideSoftInputFromWindow(view!!.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 }

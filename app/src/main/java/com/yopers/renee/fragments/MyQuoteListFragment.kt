@@ -1,4 +1,4 @@
-package com.yopers.renee
+package com.yopers.renee.fragments
 
 import android.os.Bundle
 import android.view.*
@@ -11,16 +11,21 @@ import com.mikepenz.fastadapter.adapters.ItemAdapter
 import com.mikepenz.fastadapter.helpers.ActionModeHelper
 import com.mikepenz.fastadapter.select.getSelectExtension
 import com.mikepenz.materialize.util.UIUtils
+import com.yopers.renee.BucketItem
+import com.yopers.renee.MainActivity
+import com.yopers.renee.R
 import io.minio.MinioClient
 import io.minio.Result
 import io.minio.messages.Item
 import kotlinx.android.synthetic.main.myquote_list.*
+import kotlinx.coroutines.*
 import moe.feng.common.view.breadcrumbs.BreadcrumbsView
 import moe.feng.common.view.breadcrumbs.DefaultBreadcrumbsCallback
 import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
 import timber.log.Timber
+import java.lang.Exception
 
-class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
+class MyQuoteListFragment: Fragment() {
     var itemAdapter = ItemAdapter<BucketItem>()
     private lateinit var minioClient: MinioClient
     private lateinit var fastAdapter: FastAdapter<BucketItem>
@@ -29,6 +34,9 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
     private lateinit var toolbar: Toolbar
     private lateinit var mBreadcrumbsView: BreadcrumbsView
     private lateinit var mActionModeHelper: ActionModeHelper<BucketItem>
+
+    private val parentJob = Job()
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + parentJob)
 
     companion object {
 
@@ -59,6 +67,8 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
         super.onActivityCreated(savedInstanceState)
         Timber.tag("Minio: List Fragment")
 
+        fragmentProgressBar.visibility = View.VISIBLE
+
         fastAdapter = FastAdapter.with(itemAdapter)
         fastAdapter.setHasStableIds(true)
 
@@ -85,6 +95,7 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
 
         fastAdapter.onClickListener = { view, adapter, item, position ->
             if (item.isDir as Boolean) {
+                fragmentProgressBar.visibility = View.VISIBLE
                 selectedBucketPrefix = item.name.orEmpty()
                 loadBucketObjects(selectedBucketPrefix)
             }
@@ -108,7 +119,8 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
         }
 
         //we init our ActionModeHelper
-        mActionModeHelper = ActionModeHelper(fastAdapter, R.menu.cab, ActionBarCallBack())
+        mActionModeHelper = ActionModeHelper(fastAdapter,
+            R.menu.cab, ActionBarCallBack())
 
         toolbar = activity!!.findViewById(R.id.toolbar)
         mBreadcrumbsView = activity!!.findViewById(R.id.breadcrumbs_view)
@@ -148,11 +160,26 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
     }
 
     private fun loadBucketObjects(selectedBucketPrefix: String) {
-        val task = BackgroundBucketTask(selectedBucket, selectedBucketPrefix, this)
-        task.execute(minioClient)
+        coroutineScope.launch(Dispatchers.Main) {
+            val bucketObjects = getOriginalBitmapAsync(selectedBucket, selectedBucketPrefix, minioClient)
+            Timber.i("Bucket objects empty ${bucketObjects.isEmpty()}")
+            onDataLoaded(bucketObjects, selectedBucketPrefix, selectedBucket)
+        }
     }
 
-    override fun onDataLoaded(results: List<Result<Item>>?, bucketPrefix: String, bucket: String) {
+    private suspend fun getOriginalBitmapAsync(selectedBucket: String, selectedBucketPrefix: String, minioClient: MinioClient) =
+        withContext(Dispatchers.IO) {
+            var bucketObjects: List<Result<Item>> = emptyList()
+            try {
+                bucketObjects = minioClient.listObjects(selectedBucket, selectedBucketPrefix, false).toList()
+            } catch (e: Exception) {
+                Timber.i("Exception occured ${e.toString()}")
+            }
+
+            return@withContext bucketObjects
+        }
+
+    private fun onDataLoaded(results: List<Result<Item>>?, bucketPrefix: String, bucket: String) {
         toolbar.subtitle = results?.size.toString() + " objects"
 
         buildBreadcrumbs(bucket, bucketPrefix)
@@ -164,6 +191,8 @@ class MyQuoteListFragment: Fragment(), BackgroundBucketTask.DataLoadListener {
 //        adapter.replaceItems(result.orEmpty())
 
         fastAdapter.notifyAdapterDataSetChanged()
+
+        fragmentProgressBar.visibility = View.INVISIBLE
     }
 
     private fun buildBreadcrumbs(bucketName: String, bucketPrefix: String) {

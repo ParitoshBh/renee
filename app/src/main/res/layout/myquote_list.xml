@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MyQuoteListFragment">
+    tools:context=".fragments.MyQuoteListFragment">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
@@ -20,5 +20,9 @@
 <!--        android:layout_gravity="bottom|end"-->
 <!--        android:layout_margin="16dp" />-->
 
+    <include
+        android:id="@+id/fragmentProgressBar"
+        android:visibility="gone"
+        layout="@layout/progress"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

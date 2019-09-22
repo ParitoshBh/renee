@@ -1,12 +1,8 @@
 package com.yopers.renee.onboarding
 
-import android.text.Editable
 import android.view.View
 import android.widget.EditText
 import ernestoyaquello.com.verticalstepperform.Step
-import android.view.LayoutInflater
-import com.yopers.renee.R
-
 
 class EndpointStep: Step<String> {
 
@@ -35,7 +31,7 @@ class EndpointStep: Step<String> {
 //            }
 //        });
 
-        return userNameView;
+        return userNameView
     }
 
     override fun isStepDataValid(stepData: String?): IsDataValid {
@@ -53,7 +49,7 @@ class EndpointStep: Step<String> {
         // We get the step's data from the value that the user has typed in the EditText view.
 //        val userName: Editable = userNameView.text
 //        return userName != null ? userName.toString() : "";
-        return ""
+        return userNameView.toString()
     }
 
     override fun getStepDataAsHumanReadableString(): String {

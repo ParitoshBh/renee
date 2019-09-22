@@ -5,11 +5,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MyQuoteListFragment">
+    tools:context=".fragments.MyQuoteListFragment">
 
     <ernestoyaquello.com.verticalstepperform.VerticalStepperFormView
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/stepper_form"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -18,8 +16,8 @@
         app:form_next_button_pressed_background_color="@color/colorPrimaryDark"/>
 
     <include
-    android:id="@+id/llProgressBar"
-    android:visibility="gone"
-    layout="@layout/progress"/>
+        android:id="@+id/llProgressBar"
+        android:visibility="gone"
+        layout="@layout/progress"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -26,6 +26,11 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
+    <include
+        android:id="@+id/mProgressBar"
+        android:visibility="gone"
+        layout="@layout/progress"/>
+
 </LinearLayout>
 
 </layout>

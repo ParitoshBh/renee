@@ -5,17 +5,15 @@ import android.os.Bundle
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import io.minio.MinioClient
 import io.minio.messages.Bucket
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import android.view.View
 import com.google.android.material.snackbar.Snackbar
+import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
 import com.mikepenz.materialdrawer.DrawerBuilder
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem
+import com.mikepenz.materialdrawer.model.ProfileSettingDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
@@ -23,6 +21,7 @@ import com.yopers.renee.fragments.MyQuoteListFragment
 import com.yopers.renee.fragments.OnBoardingFragment
 import io.paperdb.Paper
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.*
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
@@ -31,9 +30,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var minioClient: MinioClient
     private lateinit var headerResult: AccountHeader
     private lateinit var navigationDrawer: Drawer
-    private lateinit var defaultProfile: ProfileDrawerItem
     lateinit var userConfig: Map<String, String>
     private var navigationDrawerSelectedItemPosition: Int = 0
+
+    private val parentJob = Job()
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + parentJob)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,50 +45,93 @@ class MainActivity : AppCompatActivity() {
         GlobalScope.launch(Dispatchers.Main) {
             userConfig = getUserConfigs()
             if (userConfig.isEmpty()) {
-                initOnboarding()
+                initOnboarding("add")
             } else {
                 initApp(userConfig)
             }
         }
     }
 
-    private fun initOnboarding() {
+    private fun initOnboarding(action: String) {
         updateNavigationDrawerHeader()
-        supportFragmentManager
-            .beginTransaction()
-            .add(R.id.root_layout, OnBoardingFragment.newInstance(), "bucket_list")
-            .commit()
+
+        if (action.equals("add")) {
+            supportFragmentManager
+                .beginTransaction()
+                .add(R.id.root_layout, OnBoardingFragment.newInstance(), "bucket_list")
+                .commit()
+        } else {
+            supportFragmentManager
+                .beginTransaction()
+                .replace(R.id.root_layout, OnBoardingFragment.newInstance(), "bucket_list")
+                .commit()
+        }
     }
 
     private fun updateNavigationDrawerHeader() {
         if (userConfig.isEmpty()) {
-            defaultProfile = ProfileDrawerItem()
-                .withEmail("Add Account")
-                .withIcon(R.drawable.ic_user)
-                .withNameShown(false)
+            headerResult = AccountHeaderBuilder()
+                .withActivity(this)
+                .withCompactStyle(true)
+                .addProfiles(ProfileDrawerItem().withEmail("Add Account").withIcon(R.drawable.ic_user).withNameShown(false))
+                .withOnAccountHeaderListener(object : AccountHeader.OnAccountHeaderListener {
+                    override fun onProfileChanged(view: View?, profile: IProfile<*>, current: Boolean): Boolean {
+                        return false
+                    }
+                })
+                .build()
         } else {
-            defaultProfile = ProfileDrawerItem()
-                .withName("Bucket Name")
-                .withEmail(userConfig["endpoint"])
-                .withIcon(R.drawable.ic_user)
+            headerResult = AccountHeaderBuilder()
+                .withActivity(this)
+                .withCompactStyle(true)
+                .addProfiles(
+                    ProfileDrawerItem().withName("Bucket Name").withEmail(userConfig["endpoint"]).withIcon(R.drawable.ic_user),
+                    ProfileSettingDrawerItem().withName("Logout").withIcon(GoogleMaterial.Icon.gmd_cloud_off).withIdentifier(100001)
+                )
+                .withOnAccountHeaderListener(object : AccountHeader.OnAccountHeaderListener {
+                    override fun onProfileChanged(view: View?, profile: IProfile<*>, current: Boolean): Boolean {
+                        if (profile.identifier == 100001.toLong()) {
+                            Timber.i("Account header clicked ${profile.identifier}")
+                            logout()
+                        }
+                        return false
+                    }
+                })
+                .build()
         }
-
-        headerResult = AccountHeaderBuilder()
-            .withActivity(this)
-            .withCompactStyle(true)
-            .addProfiles(defaultProfile)
-            .withOnAccountHeaderListener(object : AccountHeader.OnAccountHeaderListener {
-                override fun onProfileChanged(view: View?, profile: IProfile<*>, current: Boolean): Boolean {
-                    return false
-                }
-            })
-            .build()
 
         navigationDrawer.setHeader(
             headerResult.view, true
         )
         headerResult.setDrawer(navigationDrawer)
     }
+
+    private fun logout() {
+        coroutineScope.launch(Dispatchers.Main) {
+            // Clear database
+            clearDatabase()
+
+            // Clear user config
+            userConfig = emptyMap()
+
+            // Clear toolbar subtitle
+            toolbar.subtitle = ""
+
+            // Hide breadcrumb view
+            breadcrumbs_view.visibility = View.GONE
+
+            // Clear navigation drawer
+            navigationDrawer.removeAllItems()
+
+            // Show onboarding
+            initOnboarding("replace")
+        }
+    }
+
+    private suspend fun clearDatabase() =
+        withContext(Dispatchers.IO) {
+            return@withContext Paper.book().destroy()
+        }
 
     private fun initApp(userConfig: Map<String, String>) {
         Timber.i("Initialize app with user configs")
@@ -100,9 +144,8 @@ class MainActivity : AppCompatActivity() {
             mProgressBar.visibility = View.GONE
             if (failure.isEmpty()) {
                 val firstBucket = buckets[0].name()
-                loadFragment(firstBucket, "add", buckets)
+                loadFragment(firstBucket, "add", buckets, true)
             } else {
-
                 Snackbar.make(root_layout, failure, Snackbar.LENGTH_LONG).show()
             }
         }
@@ -131,7 +174,7 @@ class MainActivity : AppCompatActivity() {
                         navigationDrawerSelectedItemPosition = position
                         breadcrumbs_view.setItems(ArrayList())
                         val selectedBucket = (drawerItem as Nameable<*>).name.toString()
-                        loadFragment(selectedBucket, "replace", emptyList())
+                        loadFragment(selectedBucket, "replace", emptyList(), true)
                     }
                     return false
                 }
@@ -139,7 +182,7 @@ class MainActivity : AppCompatActivity() {
             .build()
     }
 
-    fun loadFragment(bucketName: String, action: String, buckets: List<Bucket>) {
+    fun loadFragment(bucketName: String, action: String, buckets: List<Bucket>, showBreadcrumb: Boolean) {
         if (buckets.isNotEmpty()) {
             Timber.i("Populate navigation drawer")
             updateNavigationDrawerHeader()
@@ -150,6 +193,12 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }
+
+//        if (showBreadcrumb) {
+            breadcrumbs_view.visibility = View.VISIBLE
+//        } else {
+//            breadcrumbs_view.visibility = View.GONE
+//        }
 
         when(action) {
             "add" -> addFragment(bucketName)

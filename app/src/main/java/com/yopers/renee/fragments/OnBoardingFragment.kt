@@ -83,7 +83,7 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
             val buckets = pingHost(minioClient, endpoint, accessKey, secretKey)
 
             if (buckets.isNotEmpty()) {
-                parentActivity.loadFragment("yoga", "replace", buckets)
+                parentActivity.loadFragment(buckets[0].name(), "replace", buckets, true)
                 llProgressBar.visibility = View.INVISIBLE
             }
         }

@@ -21,11 +21,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
+import com.google.android.material.snackbar.Snackbar
+import com.yopers.renee.onboarding.NicenameStep
+import kotlinx.android.synthetic.main.activity_main.*
+import java.lang.Exception
 
 
 class OnBoardingFragment: Fragment(), StepperFormListener {
     lateinit var endpointStep: EndpointStep
     lateinit var credentialStep: CredentialStep
+    lateinit var nicenameStep: NicenameStep
 
     companion object {
 
@@ -56,8 +61,9 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
 
         endpointStep = EndpointStep("Endpoint")
         credentialStep = CredentialStep("Credentials")
+        nicenameStep = NicenameStep("Name")
         stepper_form
-            .setup(this, endpointStep, credentialStep)
+            .setup(this, endpointStep, credentialStep, nicenameStep)
             .displayBottomNavigation(false)
             .lastStepNextButtonText("Connect")
             .init()
@@ -72,20 +78,28 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
             val endpoint = endpointStep.userNameView.text.toString()
             val accessKey = credentialStep.credentialsView.accessKey.text.toString()
             val secretKey = credentialStep.credentialsView.secretKey.text.toString()
+            val nicename = nicenameStep.niceNameView.text.toString()
 
             val userConfig = mapOf<String, String>(
                 "endpoint" to endpoint,
                 "accessKey" to accessKey,
-                "secretKey" to secretKey
+                "secretKey" to secretKey,
+                "niceName" to nicename
             )
             parentActivity.userConfig = userConfig
             val minioClient  = parentActivity.buildMinioClient(userConfig)
-            val buckets = pingHost(minioClient, endpoint, accessKey, secretKey)
+            val buckets = pingHost(minioClient, endpoint, accessKey, secretKey, nicename)
 
             if (buckets.isNotEmpty()) {
-                parentActivity.loadFragment(buckets[0].name(), "replace", buckets, true)
-                llProgressBar.visibility = View.INVISIBLE
+                parentActivity.buildNavigationDrawer(buckets)
+                parentActivity.updateNavigationDrawerHeader()
+                parentActivity.loadFragment(buckets[0].name())
+            } else {
+//                stepper_form.markOpenStepAsUncompleted(true, "Unable to connect. Please check details")
+                stepper_form.cancelFormCompletionOrCancellationAttempt()
+                Snackbar.make(parentActivity.root_layout, "Unable to connect. Please check details", Snackbar.LENGTH_LONG).show()
             }
+            llProgressBar.visibility = View.INVISIBLE
         }
     }
 
@@ -93,19 +107,26 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private suspend fun pingHost(minioClient: MinioClient, endpoint: String, accessKey: String, secretKey: String): List<Bucket> {
+    private suspend fun pingHost(minioClient: MinioClient, endpoint: String, accessKey: String,
+                                 secretKey: String, nicename: String): List<Bucket> {
         return withContext(Dispatchers.IO) {
-            val buckets = minioClient.listBuckets()
-            if (buckets.isNotEmpty()) {
-                Paper.book().write("userConfig", mapOf<String, String>(
-                    "endpoint" to endpoint,
-                    "accessKey" to accessKey,
-                    "secretKey" to secretKey
-                ))
-                buckets
-            } else {
+            try {
+                val buckets = minioClient.listBuckets()
+                if (buckets.isNotEmpty()) {
+                    Paper.book().write("userConfig", mapOf<String, String>(
+                        "endpoint" to endpoint,
+                        "accessKey" to accessKey,
+                        "secretKey" to secretKey,
+                        "niceName" to nicename
+                    ))
+                    buckets
+                } else {
+                    emptyList<Bucket>()
+                }
+            } catch (e: Exception) {
                 emptyList<Bucket>()
             }
+
         }
     }
 

@@ -14,4 +14,5 @@
     <item name="fastadapter_swipable_item_id" type="id" />
     <item name="fastadapter_letter_item_id" type="id" />
     <item name="fastadapter_realm_sample_user_item_id" type="id" />
+    <item name="fab_upload_object" type="id" />
 </resources>

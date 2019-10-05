@@ -6,6 +6,7 @@ import android.widget.EditText
 import ernestoyaquello.com.verticalstepperform.Step
 import android.view.LayoutInflater
 import com.yopers.renee.R
+import kotlinx.android.synthetic.main.step_credentials.view.*
 
 
 class CredentialStep: Step<String> {
@@ -27,6 +28,9 @@ class CredentialStep: Step<String> {
 //        userNameView.hint = "https://storage.minio.com"
         val inflater = LayoutInflater.from(context)
         credentialsView = inflater.inflate(R.layout.step_credentials, null, false)
+        credentialsView.secretKey.setSingleLine()
+        credentialsView.accessKey.setText("WPTEPYXRYNRAUGENVEG3")
+        credentialsView.secretKey.setText("5qgZyJkUv32ByiKvLix6Uq4iBBNdDx1PDra0mJGB")
 //        ...
 //        userNameView.addTextChangedListener(new TextWatcher() {
 //            ...

@@ -10,7 +10,7 @@ class CustomApplication: Application() {
         super.onCreate()
 
         Paper.init(this)
-        Bugsnag.init(this)
+//        Bugsnag.init(this)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }

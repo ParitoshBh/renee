@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragments.MyQuoteListFragment">
+    tools:context=".fragments.BucketListFragment">
 
     <ernestoyaquello.com.verticalstepperform.VerticalStepperFormView
         android:id="@+id/stepper_form"

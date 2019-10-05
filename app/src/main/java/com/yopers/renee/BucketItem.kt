@@ -1,6 +1,5 @@
 package com.yopers.renee
 
-import android.graphics.Color
 import android.view.View
 import android.widget.TextView
 import com.mikepenz.fastadapter.FastAdapter
@@ -9,8 +8,10 @@ import com.mikepenz.fastadapter.ui.utils.FastAdapterUIUtils
 import com.mikepenz.materialize.util.UIUtils
 
 open class BucketItem : AbstractItem<BucketItem.ViewHolder>() {
-    var name: String? = null
+    var objectName: String? = null
     var isDir: Boolean? = null
+    var objectSize: String? = null
+    var objectPath: String? = null
 
     /** defines the type defining this item. must be unique. preferably an id */
     override val type: Int
@@ -20,9 +21,11 @@ open class BucketItem : AbstractItem<BucketItem.ViewHolder>() {
     override val layoutRes: Int
         get() = R.layout.fragment_bucket_list
 
-    fun build(name: String, isDir: Boolean): BucketItem {
-        this.name = name
+    fun build(name: String, isDir: Boolean, objectSize: String, objectPath: String): BucketItem {
+        this.objectName = name
         this.isDir = isDir
+        this.objectSize = objectSize
+        this.objectPath = objectPath
         return this
     }
 
@@ -31,23 +34,30 @@ open class BucketItem : AbstractItem<BucketItem.ViewHolder>() {
     }
 
     class ViewHolder(private var view: View) : FastAdapter.ViewHolder<BucketItem>(view) {
-        var name: TextView = view.findViewById(R.id.item_number)
-        var isDir: TextView = view.findViewById(R.id.isDirectory)
+        var objectName: TextView = view.findViewById(R.id.objectName)
+        var objectSize: TextView = view.findViewById(R.id.objectSize)
 
         override fun bindView(item: BucketItem, payloads: MutableList<Any>) {
             //get the context
             val ctx = itemView.context
 
             //set the background for the item
-            UIUtils.setBackground(view, FastAdapterUIUtils.getSelectableBackground(ctx, R.attr.colorPrimary, true))
+            UIUtils.setBackground(
+                view,
+                FastAdapterUIUtils.getSelectableBackground(
+                    ctx,
+                    ctx.resources.getColor(R.color.colorPrimaryLight),
+                    true
+                )
+            )
 
-            name.text = item.name
-            isDir.text = item.isDir.toString()
+            objectName.text = item.objectName
+            objectSize.text = item.objectSize
         }
 
         override fun unbindView(item: BucketItem) {
-            name.text = null
-            isDir.text = null
+            objectName.text = null
+            objectSize.text = null
         }
     }
 }

@@ -6,6 +6,7 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import io.minio.MinioClient
 import io.minio.messages.Bucket
 import android.view.View
+import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.snackbar.Snackbar
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.materialdrawer.AccountHeader
@@ -14,14 +15,17 @@ import com.mikepenz.materialdrawer.Drawer
 import com.mikepenz.materialdrawer.DrawerBuilder
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem
 import com.mikepenz.materialdrawer.model.ProfileSettingDrawerItem
+import com.mikepenz.materialdrawer.model.SecondaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IProfile
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
-import com.yopers.renee.fragments.MyQuoteListFragment
+import com.yopers.renee.fragments.BucketListFragment
 import com.yopers.renee.fragments.OnBoardingFragment
 import io.paperdb.Paper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
+import moe.feng.common.view.breadcrumbs.BreadcrumbsView
+import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
@@ -30,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var minioClient: MinioClient
     private lateinit var headerResult: AccountHeader
     private lateinit var navigationDrawer: Drawer
+    private lateinit var mBreadcrumbsView: BreadcrumbsView
     lateinit var userConfig: Map<String, String>
     private var navigationDrawerSelectedItemPosition: Int = 0
 
@@ -40,6 +45,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        mBreadcrumbsView = findViewById(R.id.breadcrumbs_view)
+
         initNavigationDrawer()
 
         GlobalScope.launch(Dispatchers.Main) {
@@ -47,13 +54,14 @@ class MainActivity : AppCompatActivity() {
             if (userConfig.isEmpty()) {
                 initOnboarding("add")
             } else {
+                Timber.i("Loaded user configs - ${userConfig}")
                 initApp(userConfig)
             }
         }
     }
 
     private fun initOnboarding(action: String) {
-        updateNavigationDrawerHeader()
+//        updateNavigationDrawerHeader()
 
         if (action.equals("add")) {
             supportFragmentManager
@@ -68,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateNavigationDrawerHeader() {
+    fun updateNavigationDrawerHeader() {
         if (userConfig.isEmpty()) {
             headerResult = AccountHeaderBuilder()
                 .withActivity(this)
@@ -85,8 +93,9 @@ class MainActivity : AppCompatActivity() {
                 .withActivity(this)
                 .withCompactStyle(true)
                 .addProfiles(
-                    ProfileDrawerItem().withName("Bucket Name").withEmail(userConfig["endpoint"]).withIcon(R.drawable.ic_user),
-                    ProfileSettingDrawerItem().withName("Logout").withIcon(GoogleMaterial.Icon.gmd_cloud_off).withIdentifier(100001)
+                    ProfileDrawerItem().withName(userConfig["niceName"]).withEmail(userConfig["endpoint"]).withIcon(R.drawable.ic_user),
+                    ProfileSettingDrawerItem().withName("Logout").withIcon(GoogleMaterial.Icon.gmd_cloud_off).withIdentifier(100001) ,
+                    ProfileSettingDrawerItem().withName("Settings").withIcon(GoogleMaterial.Icon.gmd_settings).withIdentifier(100002)
                 )
                 .withOnAccountHeaderListener(object : AccountHeader.OnAccountHeaderListener {
                     override fun onProfileChanged(view: View?, profile: IProfile<*>, current: Boolean): Boolean {
@@ -98,6 +107,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 })
                 .build()
+            navigationDrawer.addStickyFooterItem(
+                SecondaryDrawerItem().withName("Create Bucket").withIcon(GoogleMaterial.Icon.gmd_create)
+            )
         }
 
         navigationDrawer.setHeader(
@@ -118,10 +130,12 @@ class MainActivity : AppCompatActivity() {
             toolbar.subtitle = ""
 
             // Hide breadcrumb view
-            breadcrumbs_view.visibility = View.GONE
+            mBreadcrumbsView.visibility = View.GONE
 
             // Clear navigation drawer
             navigationDrawer.removeAllItems()
+            navigationDrawer.removeAllStickyFooterItems()
+            navigationDrawer.removeHeader()
 
             // Show onboarding
             initOnboarding("replace")
@@ -143,10 +157,21 @@ class MainActivity : AppCompatActivity() {
             val (buckets, failure) = getBuckets()
             mProgressBar.visibility = View.GONE
             if (failure.isEmpty()) {
-                val firstBucket = buckets[0].name()
-                loadFragment(firstBucket, "add", buckets, true)
+                buildNavigationDrawer(buckets)
             } else {
                 Snackbar.make(root_layout, failure, Snackbar.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun buildNavigationDrawer(buckets: List<Bucket>) {
+        for ((index, bucket) in buckets.withIndex()) {
+            navigationDrawer.addItem(PrimaryDrawerItem()
+                .withIdentifier(index.toLong())
+                .withName(bucket.name())
+            )
+            if (index == 0) {
+                navigationDrawer.setSelection(navigationDrawer.getDrawerItem(index.toLong())!!, true)
             }
         }
     }
@@ -170,11 +195,13 @@ class MainActivity : AppCompatActivity() {
             .withToolbar(toolbar)
             .withOnDrawerItemClickListener(object: Drawer.OnDrawerItemClickListener {
                 override fun onItemClick(view: View?, position: Int, drawerItem: IDrawerItem<*>): Boolean {
+                    Timber.i("Nav drawer item click")
                     if (navigationDrawerSelectedItemPosition != position) {
                         navigationDrawerSelectedItemPosition = position
-                        breadcrumbs_view.setItems(ArrayList())
-                        val selectedBucket = (drawerItem as Nameable<*>).name.toString()
-                        loadFragment(selectedBucket, "replace", emptyList(), true)
+                        Timber.i("Breadcrumb size ${mBreadcrumbsView.items.size}")
+                        mBreadcrumbsView.setItems(ArrayList())
+                        mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem((drawerItem as Nameable<*>).name.toString()))
+                        loadFragment((drawerItem as Nameable<*>).name.toString())
                     }
                     return false
                 }
@@ -182,43 +209,29 @@ class MainActivity : AppCompatActivity() {
             .build()
     }
 
-    fun loadFragment(bucketName: String, action: String, buckets: List<Bucket>, showBreadcrumb: Boolean) {
-        if (buckets.isNotEmpty()) {
-            Timber.i("Populate navigation drawer")
-            updateNavigationDrawerHeader()
-            for ((index, bucket) in buckets.withIndex()) {
-                navigationDrawer.addItem(PrimaryDrawerItem()
-                    .withIdentifier(index.toLong())
-                    .withName(bucket.name())
-                )
-            }
-        }
+    fun loadFragment(bucketName: String) {
+        Timber.i("Fragments size ${supportFragmentManager.fragments.size}")
 
-//        if (showBreadcrumb) {
-            breadcrumbs_view.visibility = View.VISIBLE
-//        } else {
-//            breadcrumbs_view.visibility = View.GONE
-//        }
+        mBreadcrumbsView.visibility = View.VISIBLE
 
-        when(action) {
-            "add" -> addFragment(bucketName)
-            "replace" -> replaceFragment(bucketName)
+        if (supportFragmentManager.fragments.size == 0) {
+            addFragment(bucketName)
+        } else {
+            replaceFragment(bucketName)
         }
     }
 
     private fun addFragment(bucketName: String) {
-        navigationDrawer.setSelection(navigationDrawerSelectedItemPosition.toLong())
         supportFragmentManager
             .beginTransaction()
-            .add(R.id.root_layout, MyQuoteListFragment.newInstance(bucketName, minioClient), "bucket_list")
+            .add(R.id.root_layout, BucketListFragment.newInstance(bucketName, minioClient, userConfig), "bucket_list")
             .commit()
     }
 
     private fun replaceFragment(bucketName: String) {
-        Timber.i("Replace fragment with $bucketName objects")
         supportFragmentManager
             .beginTransaction()
-            .replace(R.id.root_layout, MyQuoteListFragment.newInstance(bucketName, minioClient), "bucket_list")
+            .replace(R.id.root_layout, BucketListFragment.newInstance(bucketName, minioClient, userConfig), "bucket_list")
             .commit()
     }
 
@@ -244,7 +257,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        //handle the back press, close the drawer first and if the drawer is closed close the activity
         if (navigationDrawer.isDrawerOpen) {
             navigationDrawer.closeDrawer()
         } else {

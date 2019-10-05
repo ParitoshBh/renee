@@ -4,9 +4,9 @@ import android.view.View
 import android.widget.EditText
 import ernestoyaquello.com.verticalstepperform.Step
 
-class EndpointStep: Step<String> {
+class NicenameStep: Step<String> {
 
-    lateinit var userNameView: EditText
+    lateinit var niceNameView: EditText
 
     constructor(endpoint: String) : super(endpoint) {
 //        this.userNameView = endpoint
@@ -16,10 +16,10 @@ class EndpointStep: Step<String> {
     override fun createStepContentLayout(): View {
         // Here we generate the view that will be used by the library as the content of the step.
         // In this case we do it programmatically, but we could also do it by inflating an XML layout.
-        userNameView = EditText(context)
-        userNameView.setSingleLine()
-        userNameView.hint = "https://storage.minio.com"
-        userNameView.setText("https://storage.paritoshbh.me")
+        niceNameView = EditText(context)
+        niceNameView.setSingleLine()
+        niceNameView.hint = "Nice name"
+        niceNameView.setText("Minio 01")
 
 //        userNameView.addTextChangedListener(new TextWatcher() {
 //            ...
@@ -32,7 +32,7 @@ class EndpointStep: Step<String> {
 //            }
 //        });
 
-        return userNameView
+        return niceNameView
     }
 
     override fun isStepDataValid(stepData: String?): IsDataValid {
@@ -43,14 +43,14 @@ class EndpointStep: Step<String> {
 //        String errorMessage = !isNameValid ? "3 characters minimum" : "";
 //
 //        return new IsDataValid(isNameValid, errorMessage);
-    return IsDataValid(true)
+        return IsDataValid(true)
     }
 
     override fun getStepData(): String {
         // We get the step's data from the value that the user has typed in the EditText view.
 //        val userName: Editable = userNameView.text
 //        return userName != null ? userName.toString() : "";
-        return userNameView.toString()
+        return niceNameView.toString()
     }
 
     override fun getStepDataAsHumanReadableString(): String {

@@ -2,4 +2,6 @@
     <string name="app_name">Renee</string>
     <string name="step_credential_access_key">Access Key</string>
     <string name="step_credential_secret_key">Secret Key</string>
+    <string name="dialog_create_directory_name">Directory Name</string>
+    <string name="dialog_button_positive_create_directory_name">Create</string>
 </resources>

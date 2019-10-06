@@ -6,8 +6,11 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="colorControlNormal">@color/colorControlNormal</item>
         <item name="windowActionModeOverlay">true</item>
         <item name="colorOnSecondary">@color/colorSecondary</item>
+        <item name="actionBarTheme">@style/ThemeOverlay.MaterialComponents.Dark.ActionBar</item>
+        <item name="md_corner_radius">16dp</item>
     </style>
 
 </resources>

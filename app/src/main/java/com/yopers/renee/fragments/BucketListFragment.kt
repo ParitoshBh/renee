@@ -345,9 +345,32 @@ class BucketListFragment: Fragment() {
                         }
                     }
                 }
+                R.id.item_delete -> {
+                    val deleteCandidates = selectExtension.selections
+                    MaterialDialog(context!!).show {
+                        title(text = "Confirm deletion")
+                        message(text = "This is a destructive action and will permanently delete files. Please confirm your action")
+                        positiveButton(text = "Delete") {
+                            for (pos in deleteCandidates) {
+                                Timber.i("Selected bucket object ${fastAdapter.getItem(pos)?.objectName} from bucket ${selectedBucket} and prefix ${selectedBucketPrefix}")
+                                Bucket().removeObject(
+                                    coroutineScope,
+                                    minioClient,
+                                    selectedBucket,
+                                    selectedBucketPrefix,
+                                    fastAdapter.getItem(pos)?.objectName.orEmpty(),
+                                    this@BucketListFragment
+                                )
+                            }
+                        }
+                        negativeButton(text = "Cancel")
+                    }
+                }
             }
+
             //as we no longer have a selection so the actionMode can be finished
             mode.finish()
+
             //we consume the event
             return true
         }

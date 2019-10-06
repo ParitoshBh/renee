@@ -18,6 +18,25 @@ class Bucket {
         }
     }
 
+    fun removeObject(coroutineScope: CoroutineScope, minioClient: MinioClient,
+                     selectedBucket: String, selectedBucketPrefix: String, name: String,
+                     fragment: BucketListFragment) {
+        coroutineScope.launch(Dispatchers.Main) {
+            removeObjectFromBucket(minioClient, selectedBucket, selectedBucketPrefix, name)
+            fragment.loadBucketObjects(selectedBucketPrefix)
+        }
+    }
+
+    private suspend fun removeObjectFromBucket(minioClient: MinioClient, selectedBucket: String,
+                                                selectedBucketPrefix: String, name: String) {
+        return withContext(Dispatchers.IO) {
+            minioClient.removeObject(
+                selectedBucket,
+                "${selectedBucketPrefix}/${name}"
+            )
+        }
+    }
+
     private suspend fun createDirectoryInBucket(minioClient: MinioClient, selectedBucket: String,
                                                 selectedBucketPrefix: String, name: String) {
         return withContext(Dispatchers.IO) {

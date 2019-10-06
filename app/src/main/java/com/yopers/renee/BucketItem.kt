@@ -41,6 +41,10 @@ open class BucketItem : AbstractItem<BucketItem.ViewHolder>() {
             //get the context
             val ctx = itemView.context
 
+            if (item.isDir!!) {
+                item.isSelectable = false
+            }
+
             //set the background for the item
             UIUtils.setBackground(
                 view,

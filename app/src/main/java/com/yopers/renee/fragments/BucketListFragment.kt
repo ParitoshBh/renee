@@ -8,10 +8,8 @@ import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.customview.customView
 import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
-import com.leinardi.android.speeddial.SpeedDialActionItem
 import com.leinardi.android.speeddial.SpeedDialView
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.IAdapter
@@ -133,7 +131,7 @@ class BucketListFragment: Fragment() {
         // Gets (or creates and attaches if not yet existing) the extension from the given `FastAdapter`
         selectExtension = fastAdapter.getSelectExtension()
         selectExtension.isSelectable = true
-//        selectExtension.multiSelect = true
+        selectExtension.multiSelect = false
         selectExtension.selectOnLongClick = true
 
         fastAdapter.onPreClickListener = { _: View?, _: IAdapter<BucketItem>, item: BucketItem, _: Int ->
@@ -147,15 +145,19 @@ class BucketListFragment: Fragment() {
         }
 
         fastAdapter.onClickListener = { view, adapter, item, position ->
-            if (item.isDir as Boolean) {
-                fragmentProgressBar.visibility = View.VISIBLE
-                selectedBucketPrefix = item.objectPath.orEmpty()
-                loadBucketObjects(selectedBucketPrefix)
+            Timber.i("Action mode active ${mActionModeHelper.isActive}")
+            if (mActionModeHelper.isActive.not()) {
+                if (item.isDir!!) {
+                    fragmentProgressBar.visibility = View.VISIBLE
+                    selectedBucketPrefix = item.objectPath.orEmpty()
+                    loadBucketObjects(selectedBucketPrefix)
+                }
             }
             false
         }
 
-        fastAdapter.onPreLongClickListener = { _: View, _: IAdapter<BucketItem>, _: BucketItem, position: Int ->
+        fastAdapter.onPreLongClickListener = { _: View, _: IAdapter<BucketItem>, item: BucketItem, position: Int ->
+            Timber.i("On long click listener ${item.isDir} at ${position}")
             val actionMode = mActionModeHelper.onLongClick(activity as MainActivity, position)
             if (actionMode != null) {
                 activity!!

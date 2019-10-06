@@ -7,7 +7,6 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import io.minio.MinioClient
 import io.minio.messages.Bucket
 import android.view.View
-import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.snackbar.Snackbar
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.materialdrawer.AccountHeader

@@ -65,6 +65,8 @@ dependencies {
     implementation 'com.mikepenz:fontawesome-typeface:5.9.0.0-kotlin@aar'
     implementation "com.leinardi.android:speed-dial:3.1.0"
     implementation 'com.squareup.okio:okio:2.4.0'
+    implementation 'com.afollestad.material-dialogs:core:3.1.1'
+    implementation 'com.afollestad.material-dialogs:input:3.1.1'
 }
 
 def static getApiKey(){

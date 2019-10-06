@@ -2,10 +2,14 @@ package com.yopers.renee.fragments
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.view.*
 import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
+import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.customview.customView
+import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
 import com.leinardi.android.speeddial.SpeedDialActionItem
 import com.leinardi.android.speeddial.SpeedDialView
@@ -19,6 +23,7 @@ import com.mikepenz.materialize.util.UIUtils
 import com.yopers.renee.BucketItem
 import com.yopers.renee.MainActivity
 import com.yopers.renee.R
+import com.yopers.renee.utils.Bucket
 import com.yopers.renee.utils.Database
 import com.yopers.renee.utils.Download
 import com.yopers.renee.utils.Upload
@@ -80,30 +85,45 @@ class BucketListFragment: Fragment() {
         super.onActivityCreated(savedInstanceState)
         Timber.tag("Minio: List Fragment")
 
-        speedDial
-            .addActionItem(
-                SpeedDialActionItem
-                    .Builder(R.id.fab_upload_object, R.drawable.ic_cloud_upload)
-                    .setLabel("Upload Object")
-                    .create()
-            )
-            ?.setOnActionSelectedListener(SpeedDialView.OnActionSelectedListener { actionItem ->
-                when (actionItem.id) {
-                    R.id.fab_upload_object -> {
-                        Timber.i("FAB clicked")
-                        speedDial.close(true)
-                        startActivityForResult(
-                            Intent().setAction(Intent.ACTION_OPEN_DOCUMENT).apply {
-                                addCategory(Intent.CATEGORY_OPENABLE)
-                                type = "*/*"
-                            },
-                            INTENT_SELECT_FILE_REQUEST_CODE
-                        )
-                        return@OnActionSelectedListener true
-                    }
+        speedDial.inflate(R.menu.fab)
+        speedDial.setOnActionSelectedListener(SpeedDialView.OnActionSelectedListener { actionItem ->
+            when (actionItem.id) {
+                R.id.fab_upload_object -> {
+                    speedDial.close(true)
+                    startActivityForResult(
+                        Intent().setAction(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "*/*"
+                        },
+                        INTENT_SELECT_FILE_REQUEST_CODE
+                    )
+                    return@OnActionSelectedListener true
                 }
-                false
-            })
+                R.id.fab_create_directory -> {
+                    speedDial.close(true)
+                    MaterialDialog(context!!).show {
+                        title(R.string.dialog_create_directory_name)
+                        input(
+                            hint = "Type something",
+                            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+                        ) { _, text ->
+                            Timber.i("Dialog input ${text}")
+                            Bucket().createDirectory(
+                                coroutineScope,
+                                minioClient,
+                                selectedBucket,
+                                selectedBucketPrefix,
+                                text.toString(),
+                                this@BucketListFragment
+                            )
+                        }
+                        positiveButton(R.string.dialog_button_positive_create_directory_name)
+                    }
+                    return@OnActionSelectedListener true
+                }
+            }
+            false
+        })
 
         fragmentProgressBar.visibility = View.VISIBLE
 
@@ -143,7 +163,7 @@ class BucketListFragment: Fragment() {
                     .setBackgroundColor(UIUtils.getThemeColorFromAttrOrRes(
                         activity as MainActivity,
                         R.attr.colorPrimary,
-                        R.color.material_drawer_primary
+                        R.color.colorControlNormal
                     ))
             }
             //if we have no actionMode we do not consume the event

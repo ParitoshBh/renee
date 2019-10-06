@@ -16,6 +16,7 @@ import okio.sink
 import okio.source
 import timber.log.Timber
 import java.io.InputStream
+import java.lang.Exception
 
 class Download {
     private val notification = Notification()
@@ -39,7 +40,7 @@ class Download {
         )
 
         coroutineScope.launch(Dispatchers.Main) {
-            initiateTransfer(
+            val isSuccessful = initiateTransfer(
                 downloadLocation.toUri(),
                 context,
                 minioClient,
@@ -49,7 +50,11 @@ class Download {
                 bucketObject
             )
 
-            notification.update("Successfully downloaded file")
+            if (isSuccessful) {
+                notification.update("Successfully downloaded file")
+            } else {
+                notification.update("Failed to downloaded file")
+            }
         }
     }
 
@@ -58,19 +63,23 @@ class Download {
                                          selectedBucketPrefix: String, bucketObject: String
     ) = withContext(Dispatchers.IO) {
         val pickedDir = DocumentFile.fromTreeUri(context, uri)
-        val newFile = pickedDir!!.createFile("application/gzip", bucketObject)
+        try {
+            val newFile = pickedDir!!.createFile("application/gzip", bucketObject)
+            val inputStream: InputStream = minioClient.getObject(selectedBucket, selectedBucketPrefix + bucketObject)
 
-        val inputStream: InputStream = minioClient.getObject(selectedBucket, selectedBucketPrefix + bucketObject)
+            val source = inputStream.source().buffer()
+            val sink = activity.contentResolver.openOutputStream(newFile!!.uri)!!.sink().buffer()
 
-        val source = inputStream.source().buffer()
-        val sink = activity.contentResolver.openOutputStream(newFile!!.uri)!!.sink().buffer()
-
-        source.use { input ->
-            sink.use { output ->
-                output.writeAll(input)
+            source.use { input ->
+                sink.use { output ->
+                    output.writeAll(input)
+                }
             }
-        }
 
-        return@withContext true
+            return@withContext true
+        } catch (e: Exception) {
+            Timber.i("New File exception ${e}")
+            return@withContext false
+        }
     }
 }

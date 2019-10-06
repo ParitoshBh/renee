@@ -37,18 +37,19 @@ class Upload {
         )
 
         coroutineScope.launch(Dispatchers.Main) {
-            initiateUpload(pickedFile, inputStream, minioClient, selectedBucket)
+            initiateUpload(pickedFile, inputStream, minioClient, selectedBucket, selectedBucketPrefix)
             notification.update("Successfully uploaded file")
             fragment.loadBucketObjects(selectedBucketPrefix)
         }
     }
 
     private suspend fun initiateUpload(pickedFile: DocumentFile, inputStream: InputStream,
-                                       minioClient: MinioClient, selectedBucket: String) {
+                                       minioClient: MinioClient, selectedBucket: String,
+                                       selectedBucketPrefix: String) {
         return withContext(Dispatchers.IO) {
             minioClient.putObject(
                 selectedBucket,
-                pickedFile.name,
+                "${selectedBucketPrefix}/${pickedFile.name}",
                 inputStream,
                 "application/octet-stream"
             )

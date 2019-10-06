@@ -102,7 +102,6 @@ class BucketListFragment: Fragment() {
                     MaterialDialog(context!!).show {
                         title(R.string.dialog_create_directory_name)
                         input(
-                            hint = "Type something",
                             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
                         ) { _, text ->
                             Timber.i("Dialog input ${text}")

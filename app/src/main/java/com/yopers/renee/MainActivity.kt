@@ -1,5 +1,6 @@
 package com.yopers.renee
 
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
@@ -252,6 +253,26 @@ class MainActivity : AppCompatActivity() {
                 emptyMap<String, String>()
             } else {
                 userConfig
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            11 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Snackbar.make(
+                        this.findViewById(R.id.root_layout),
+                        "Permission granted. Please try downloading again",
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                } else {
+                    Snackbar.make(
+                        this.findViewById(R.id.root_layout),
+                        "Permission denied, Renee won't be able to download files",
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }

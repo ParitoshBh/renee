@@ -179,12 +179,17 @@ class BucketListFragment: Fragment() {
 
         mBreadcrumbsView.setCallback(object : DefaultBreadcrumbsCallback<BreadcrumbItem>() {
             override fun onNavigateBack(item: BreadcrumbItem, position: Int) {
+                Timber.i("Breadcrumb onNavigateBack ${item.selectedItem} at ${position} with total ${mBreadcrumbsView.items.size}")
+                if (mBreadcrumbsView.items.size != 1) {
+                    mBreadcrumbsView.removeLastItem()
+                }
+
                 selectedBucketPrefix = buildUpdatedBucketPrefix(selectedBucketPrefix, item.selectedItem, position)
                 loadBucketObjects(selectedBucketPrefix)
             }
 
             override fun onNavigateNewLocation(newItem: BreadcrumbItem, changedPosition: Int) {
-//                println("Minio breadcrumb" + newItem.getSelectedItem())
+                Timber.i("Breadcrumb onNavigateBack ${newItem.selectedIndex} at ${changedPosition}")
             }
         })
 
@@ -312,7 +317,7 @@ class BucketListFragment: Fragment() {
             mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem(bucketName))
         } else {
             val path = bucketPrefix.split('/')
-            if (path.size >= 2 && !path[path.size - 2].contentEquals(mBreadcrumbsView.items.last().selectedItem.toString())) {
+            if (path.size >= 2) {
                 mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem(path[path.size - 2]))
             }
         }

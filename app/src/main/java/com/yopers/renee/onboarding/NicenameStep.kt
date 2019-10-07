@@ -8,29 +8,13 @@ class NicenameStep: Step<String> {
 
     lateinit var niceNameView: EditText
 
-    constructor(endpoint: String) : super(endpoint) {
-//        this.userNameView = endpoint
-    }
+    constructor(endpoint: String) : super(endpoint) {}
 
 
     override fun createStepContentLayout(): View {
-        // Here we generate the view that will be used by the library as the content of the step.
-        // In this case we do it programmatically, but we could also do it by inflating an XML layout.
         niceNameView = EditText(context)
         niceNameView.setSingleLine()
         niceNameView.hint = "Nice name"
-        niceNameView.setText("Minio 01")
-
-//        userNameView.addTextChangedListener(new TextWatcher() {
-//            ...
-//            @Override
-//            public void onTextChanged(CharSequence s, int start, int before, int count) {
-//                // Whenever the user updates the user name text, we update the state of the step.
-//                // The step will be marked as completed only if its data is valid, which will be
-//                // checked automatically by the form with a call to isStepDataValid().
-//                markAsCompletedOrUncompleted(true);
-//            }
-//        });
 
         return niceNameView
     }

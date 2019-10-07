@@ -1,49 +1,26 @@
 package com.yopers.renee.onboarding
 
-import android.text.Editable
 import android.view.View
-import android.widget.EditText
 import ernestoyaquello.com.verticalstepperform.Step
 import android.view.LayoutInflater
 import com.yopers.renee.R
 import kotlinx.android.synthetic.main.step_credentials.view.*
 
-
 class CredentialStep: Step<String> {
 
-    //    lateinit var userNameView: EditText
     lateinit var credentialsView: View
 
-    constructor(endpoint: String) : super(endpoint) {
-//        this.userNameView = endpoint
-    }
+    constructor(endpoint: String) : super(endpoint) {}
 
 
     override fun createStepContentLayout(): View {
-        // Here we generate the view that will be used by the library as the content of the step.
-        // In this case we do it programmatically, but we could also do it by inflating an XML layout.
-//        userNameView = new EditText(getContext());
-//        userNameView = EditText(context)
-//        userNameView.setSingleLine()
-//        userNameView.hint = "https://storage.minio.com"
         val inflater = LayoutInflater.from(context)
         credentialsView = inflater.inflate(R.layout.step_credentials, null, false)
         credentialsView.secretKey.setSingleLine()
-        credentialsView.accessKey.setText("WPTEPYXRYNRAUGENVEG3")
-        credentialsView.secretKey.setText("5qgZyJkUv32ByiKvLix6Uq4iBBNdDx1PDra0mJGB")
-//        ...
-//        userNameView.addTextChangedListener(new TextWatcher() {
-//            ...
-//            @Override
-//            public void onTextChanged(CharSequence s, int start, int before, int count) {
-//                // Whenever the user updates the user name text, we update the state of the step.
-//                // The step will be marked as completed only if its data is valid, which will be
-//                // checked automatically by the form with a call to isStepDataValid().
-//                markAsCompletedOrUncompleted(true);
-//            }
-//        });
 
-//        return userNameView;
+        credentialsView.accessKey.hint = "Q3AM3UQ867SPQQA43P2F"
+        credentialsView.secretKey.hint = "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
+
         return credentialsView
     }
 

@@ -21,6 +21,7 @@ import com.mikepenz.materialdrawer.model.interfaces.IProfile
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import com.yopers.renee.fragments.BucketListFragment
 import com.yopers.renee.fragments.OnBoardingFragment
+import io.minio.errors.MinioException
 import io.paperdb.Paper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
@@ -239,8 +240,9 @@ class MainActivity : AppCompatActivity() {
         return withContext(Dispatchers.IO) {
             try {
                 Pair(minioClient.listBuckets(), "")
-            } catch (e: Exception) {
-                Pair(emptyList<Bucket>(), e.toString())
+            } catch (e: MinioException) {
+                Timber.i("Exception getting bucket list ${e}")
+                Pair(emptyList<Bucket>(), e.message.orEmpty())
             }
         }
     }

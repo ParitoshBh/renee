@@ -27,6 +27,7 @@ import com.yopers.renee.utils.Download
 import com.yopers.renee.utils.Upload
 import io.minio.MinioClient
 import io.minio.Result
+import io.minio.errors.MinioException
 import io.minio.messages.Item
 import kotlinx.android.synthetic.main.object_list.*
 import kotlinx.coroutines.*
@@ -270,7 +271,7 @@ class BucketListFragment: Fragment() {
             var bucketObjects: List<Result<Item>> = emptyList()
             try {
                 bucketObjects = minioClient.listObjects(selectedBucket, selectedBucketPrefix, false).toList()
-            } catch (e: Exception) {
+            } catch (e: MinioException) {
                 Timber.i("Exception occurred ${e}")
             }
 

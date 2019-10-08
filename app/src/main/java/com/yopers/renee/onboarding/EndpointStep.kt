@@ -1,8 +1,15 @@
 package com.yopers.renee.onboarding
 
+import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
 import ernestoyaquello.com.verticalstepperform.Step
+import timber.log.Timber
+import android.widget.TextView
+import android.text.Editable
+import android.util.Patterns
+import android.view.KeyEvent
+
 
 class EndpointStep: Step<String> {
 
@@ -16,34 +23,55 @@ class EndpointStep: Step<String> {
         userNameView.setSingleLine()
         userNameView.hint = "https://play.min.io/minio"
 
+        userNameView.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                markAsCompletedOrUncompleted(true)
+            }
+
+            override fun afterTextChanged(s: Editable) {}
+        })
+
+        userNameView.setOnEditorActionListener(object : TextView.OnEditorActionListener {
+            override fun onEditorAction(v: TextView, actionId: Int, event: KeyEvent): Boolean {
+                formView.goToNextStep(true)
+                return false
+            }
+        })
+
         return userNameView
     }
 
     override fun isStepDataValid(stepData: String?): IsDataValid {
-//        // The step's data (i.e., the user name) will be considered valid only if it is longer than
-//        // three characters. In case it is not, we will display an error message for feedback.
-//        // In an optional step, you should implement this method to always return a valid value.
-//        boolean isNameValid = stepData.length() >= 3;
-//        String errorMessage = !isNameValid ? "3 characters minimum" : "";
-//
-//        return new IsDataValid(isNameValid, errorMessage);
-    return IsDataValid(true)
+        Timber.i("Endpoint input ${stepData.toString()}")
+
+        if (Patterns.WEB_URL.matcher(stepData).matches()) {
+            return IsDataValid(true)
+        } else {
+            return IsDataValid(false)
+        }
     }
 
     override fun getStepData(): String {
         // We get the step's data from the value that the user has typed in the EditText view.
-//        val userName: Editable = userNameView.text
-//        return userName != null ? userName.toString() : "";
-        return userNameView.toString()
+        val endpoint: Editable = userNameView.text
+
+        if (endpoint.isEmpty()) {
+            return ""
+        }
+
+        return endpoint.toString()
     }
 
     override fun getStepDataAsHumanReadableString(): String {
-        // Because the step's data is already a human-readable string, we don't need to convert it.
-        // However, we return "(Empty)" if the text is empty to avoid not having any text to display.
-        // This string will be displayed in the subtitle of the step whenever the step gets closed.
-//        String userName = getStepData();
-//        return !userName.isEmpty() ? userName : "(Empty)";
-        return ""
+        val endpoint = getStepData();
+
+        if (endpoint.isEmpty()) {
+            return "(Empty)"
+        }
+
+        return endpoint
     }
 
     override fun onStepOpened(animated: Boolean) {

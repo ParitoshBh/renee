@@ -1,10 +1,13 @@
 package com.yopers.renee.onboarding
 
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import ernestoyaquello.com.verticalstepperform.Step
 import android.view.LayoutInflater
 import com.yopers.renee.R
 import kotlinx.android.synthetic.main.step_credentials.view.*
+import timber.log.Timber
 
 class CredentialStep: Step<String> {
 
@@ -15,40 +18,64 @@ class CredentialStep: Step<String> {
 
     override fun createStepContentLayout(): View {
         val inflater = LayoutInflater.from(context)
+
         credentialsView = inflater.inflate(R.layout.step_credentials, null, false)
         credentialsView.secretKey.setSingleLine()
 
         credentialsView.accessKey.hint = "Q3AM3UQ867SPQQA43P2F"
         credentialsView.secretKey.hint = "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
 
+        credentialsView.accessKey.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                markAsCompletedOrUncompleted(true)
+            }
+
+            override fun afterTextChanged(s: Editable) {}
+        })
+        credentialsView.secretKey.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                markAsCompletedOrUncompleted(true)
+            }
+
+            override fun afterTextChanged(s: Editable) {}
+        })
+
         return credentialsView
     }
 
     override fun isStepDataValid(stepData: String?): IsDataValid {
-//        // The step's data (i.e., the user name) will be considered valid only if it is longer than
-//        // three characters. In case it is not, we will display an error message for feedback.
-//        // In an optional step, you should implement this method to always return a valid value.
-//        boolean isNameValid = stepData.length() >= 3;
-//        String errorMessage = !isNameValid ? "3 characters minimum" : "";
-//
-//        return new IsDataValid(isNameValid, errorMessage);
-        return IsDataValid(true)
+        Timber.i("Credentials input ${stepData.toString()}")
+
+        if (stepData != null) {
+            if (stepData.isNotEmpty()) {
+                return IsDataValid(true)
+            }
+        }
+
+        return IsDataValid(false)
     }
 
     override fun getStepData(): String {
-        // We get the step's data from the value that the user has typed in the EditText view.
-//        val userName: Editable = userNameView.text
-//        return userName != null ? userName.toString() : "";
-        return ""
+        val accessKey: String = credentialsView.accessKey.text.toString().trim()
+        val secretKey: String = credentialsView.secretKey.text.toString().trim()
+
+        if (accessKey.isEmpty() || secretKey.isEmpty()) {
+            return ""
+        }
+
+        return accessKey
     }
 
     override fun getStepDataAsHumanReadableString(): String {
-        // Because the step's data is already a human-readable string, we don't need to convert it.
-        // However, we return "(Empty)" if the text is empty to avoid not having any text to display.
-        // This string will be displayed in the subtitle of the step whenever the step gets closed.
-//        String userName = getStepData();
-//        return !userName.isEmpty() ? userName : "(Empty)";
-        return ""
+        if (stepData.isNotEmpty()) {
+            return stepData
+        }
+
+        return "(Empty)"
     }
 
     override fun onStepOpened(animated: Boolean) {

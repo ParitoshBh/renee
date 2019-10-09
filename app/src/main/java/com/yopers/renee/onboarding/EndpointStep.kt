@@ -54,7 +54,6 @@ class EndpointStep: Step<String> {
     }
 
     override fun getStepData(): String {
-        // We get the step's data from the value that the user has typed in the EditText view.
         val endpoint: Editable = userNameView.text
 
         if (endpoint.isEmpty()) {

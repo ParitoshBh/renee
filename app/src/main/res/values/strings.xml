@@ -4,4 +4,6 @@
     <string name="step_credential_secret_key">Secret Key</string>
     <string name="dialog_create_directory_name">Directory Name</string>
     <string name="dialog_button_positive_create_directory_name">Create</string>
+    <string name="nav_drawer_secondary_item_create_bucket">Create Bucket</string>
+    <string name="dialog_create_bucket_name">Bucket Name</string>
 </resources>

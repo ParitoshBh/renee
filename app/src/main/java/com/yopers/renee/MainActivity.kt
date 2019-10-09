@@ -3,10 +3,13 @@ package com.yopers.renee
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.InputType
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import io.minio.MinioClient
 import io.minio.messages.Bucket
 import android.view.View
+import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.materialdrawer.AccountHeader
@@ -28,6 +31,7 @@ import kotlinx.coroutines.*
 import moe.feng.common.view.breadcrumbs.BreadcrumbsView
 import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
 import timber.log.Timber
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
@@ -62,8 +66,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initOnboarding(action: String) {
-//        updateNavigationDrawerHeader()
-
         if (action.equals("add")) {
             supportFragmentManager
                 .beginTransaction()
@@ -109,7 +111,9 @@ class MainActivity : AppCompatActivity() {
                 })
                 .build()
             navigationDrawer.addStickyFooterItem(
-                SecondaryDrawerItem().withName("Create Bucket").withIcon(GoogleMaterial.Icon.gmd_create)
+                SecondaryDrawerItem()
+                    .withName(getString(R.string.nav_drawer_secondary_item_create_bucket))
+                    .withIcon(GoogleMaterial.Icon.gmd_create)
             )
         }
 
@@ -196,14 +200,35 @@ class MainActivity : AppCompatActivity() {
             .withToolbar(toolbar)
             .withOnDrawerItemClickListener(object: Drawer.OnDrawerItemClickListener {
                 override fun onItemClick(view: View?, position: Int, drawerItem: IDrawerItem<*>): Boolean {
-                    Timber.i("Nav drawer item click")
-                    if (navigationDrawerSelectedItemPosition != position) {
-                        navigationDrawerSelectedItemPosition = position
-                        Timber.i("Breadcrumb size ${mBreadcrumbsView.items.size}")
-                        mBreadcrumbsView.setItems(ArrayList())
-                        mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem((drawerItem as Nameable<*>).name.toString()))
-                        loadFragment((drawerItem as Nameable<*>).name.toString())
+                    val drawerItemName = (drawerItem as Nameable<*>).name.toString()
+                    Timber.i("Nav drawer item click ${drawerItemName}")
+
+                    if (drawerItemName.contentEquals(getString(R.string.nav_drawer_secondary_item_create_bucket))) {
+                        MaterialDialog(this@MainActivity).show {
+                            title(R.string.dialog_create_bucket_name)
+                            input(
+                                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+                            ) { _, text ->
+                                Timber.i("Dialog input ${text}")
+                                com.yopers.renee.utils.Bucket().create(
+                                    coroutineScope,
+                                    minioClient,
+                                    text.toString(),
+                                    this@MainActivity
+                                )
+                            }
+                            positiveButton(R.string.dialog_button_positive_create_directory_name)
+                        }
+                    } else {
+                        if (navigationDrawerSelectedItemPosition != position) {
+                            navigationDrawerSelectedItemPosition = position
+                            Timber.i("Breadcrumb size ${mBreadcrumbsView.items.size}")
+                            mBreadcrumbsView.setItems(ArrayList())
+                            mBreadcrumbsView.addItem(BreadcrumbItem.createSimpleItem(drawerItemName))
+                            loadFragment(drawerItemName)
+                        }
                     }
+
                     return false
                 }
             })
@@ -243,6 +268,9 @@ class MainActivity : AppCompatActivity() {
             } catch (e: MinioException) {
                 Timber.i("Exception getting bucket list ${e}")
                 Pair(emptyList<Bucket>(), e.message.orEmpty())
+            } catch (s: SocketTimeoutException) {
+                Timber.i("Exception getting bucket list ${s}")
+                Pair(emptyList<Bucket>(), s.message.orEmpty())
             }
         }
     }

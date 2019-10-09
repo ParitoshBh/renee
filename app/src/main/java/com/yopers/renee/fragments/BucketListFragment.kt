@@ -260,13 +260,13 @@ class BucketListFragment: Fragment() {
 
     fun loadBucketObjects(selectedBucketPrefix: String) {
         coroutineScope.launch(Dispatchers.Main) {
-            val bucketObjects = getOriginalBitmapAsync(selectedBucket, selectedBucketPrefix, minioClient)
+            val bucketObjects = getAllBuckets(selectedBucket, selectedBucketPrefix, minioClient)
             Timber.i("Bucket objects empty ${bucketObjects.isEmpty()}")
             onDataLoaded(bucketObjects, selectedBucketPrefix, selectedBucket)
         }
     }
 
-    private suspend fun getOriginalBitmapAsync(selectedBucket: String, selectedBucketPrefix: String, minioClient: MinioClient) =
+    private suspend fun getAllBuckets(selectedBucket: String, selectedBucketPrefix: String, minioClient: MinioClient) =
         withContext(Dispatchers.IO) {
             var bucketObjects: List<Result<Item>> = emptyList()
             try {

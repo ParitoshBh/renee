@@ -21,10 +21,7 @@ import com.mikepenz.materialize.util.UIUtils
 import com.yopers.renee.BucketItem
 import com.yopers.renee.MainActivity
 import com.yopers.renee.R
-import com.yopers.renee.utils.Bucket
-import com.yopers.renee.utils.Database
-import com.yopers.renee.utils.Download
-import com.yopers.renee.utils.Upload
+import com.yopers.renee.utils.*
 import io.minio.MinioClient
 import io.minio.Result
 import io.minio.errors.MinioException
@@ -131,7 +128,7 @@ class BucketListFragment: Fragment() {
         // Gets (or creates and attaches if not yet existing) the extension from the given `FastAdapter`
         selectExtension = fastAdapter.getSelectExtension()
         selectExtension.isSelectable = true
-        selectExtension.multiSelect = false
+        selectExtension.multiSelect = true
         selectExtension.selectOnLongClick = true
 
         fastAdapter.onPreClickListener = { _: View?, _: IAdapter<BucketItem>, item: BucketItem, _: Int ->
@@ -226,8 +223,15 @@ class BucketListFragment: Fragment() {
             }
             INTENT_SELECT_FILE_REQUEST_CODE -> {
                 if (data != null) {
-                    Upload().bucketObject(data.data!!, context!!, coroutineScope, minioClient,
-                        selectedBucket, selectedBucketPrefix, this)
+                    Upload().bucketObject(
+                        data.data!!,
+                        context!!,
+                        coroutineScope,
+                        minioClient,
+                        selectedBucket,
+                        selectedBucketPrefix,
+                        this
+                    )
                 } else {
                     // Failed to save setting
                     Snackbar.make(
@@ -329,6 +333,21 @@ class BucketListFragment: Fragment() {
         override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
             when (item.itemId) {
                 R.id.item_download -> {
+                    val notification = Notification()
+                    notification.createChannel(
+                        context!!,
+                        false,
+                        context!!.getString(R.string.app_name),
+                        "App notification channel"
+                    )
+                    notification.create(
+                        context!!,
+                        "${context!!.packageName}-${context!!.getString(R.string.app_name)}",
+                        "Downloading selected object(s)",
+                        "",
+                        selectExtension.selections.size
+                    )
+
                     for (pos in selectExtension.selections) {
                         Timber.i("Selected bucket object ${fastAdapter.getItem(pos)?.objectName} from bucket ${selectedBucket} and prefix ${selectedBucketPrefix}")
                         if (userConfig["downloadLocation"].isNullOrEmpty()) {
@@ -345,7 +364,8 @@ class BucketListFragment: Fragment() {
                                 coroutineScope,
                                 minioClient,
                                 activity!!,
-                                userConfig["downloadLocation"]!!
+                                userConfig["downloadLocation"]!!,
+                                notification
                             )
                         }
                     }

@@ -33,7 +33,8 @@ class Upload {
             context,
             "${context.packageName}-${context.getString(R.string.app_name)}",
             "Uploading selected file",
-            pickedFile!!.name!!
+            pickedFile!!.name!!,
+            1
         )
 
         coroutineScope.launch(Dispatchers.Main) {

@@ -20,11 +20,9 @@ import java.io.InputStream
 import java.lang.Exception
 
 class Download {
-    private val notification = Notification()
-
     fun bucketObject(selectedBucket: String, selectedBucketPrefix: String, bucketObject: String,
                      context: Context, coroutineScope: CoroutineScope, minioClient: MinioClient,
-                     activity: Activity, downloadLocation: String) {
+                     activity: Activity, downloadLocation: String, notification: Notification) {
         Timber.i("Storage write permissions ${Permission().isAvailable(activity)}")
         if (!Permission().isAvailable(activity)) {
             Snackbar.make(
@@ -35,20 +33,6 @@ class Download {
             Permission().request(activity)
         } else {
             Timber.i("Started downloading object ${bucketObject} from ${selectedBucket} bucket")
-            notification.createChannel(
-                context,
-                false,
-                context.getString(R.string.app_name),
-                "App notification channel"
-            )
-
-            notification.create(
-                context,
-                "${context.packageName}-${context.getString(R.string.app_name)}",
-                "Downloading selected file",
-                bucketObject
-            )
-
             coroutineScope.launch(Dispatchers.Main) {
                 val isSuccessful = initiateTransfer(
                     downloadLocation.toUri(),
@@ -61,9 +45,9 @@ class Download {
                 )
 
                 if (isSuccessful) {
-                    notification.update("Successfully downloaded file")
+                    notification.update("Downloaded ${bucketObject}")
                 } else {
-                    notification.update("Failed to downloaded file")
+                    notification.update("Failed to download ${bucketObject}")
                 }
             }
         }

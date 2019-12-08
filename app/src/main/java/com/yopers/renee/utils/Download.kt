@@ -59,16 +59,20 @@ class Download {
     ) = withContext(Dispatchers.IO) {
         val pickedDir = DocumentFile.fromTreeUri(context, uri)
         try {
-            val newFile = pickedDir!!.createFile("application/gzip", bucketObject)
-            val inputStream: InputStream = minioClient.getObject(selectedBucket, selectedBucketPrefix + bucketObject)
+            if (pickedDir!!.findFile(bucketObject) === null) {
+                val newFile = pickedDir!!.createFile("application/gzip", bucketObject)
+                val inputStream: InputStream = minioClient.getObject(selectedBucket, selectedBucketPrefix + bucketObject)
 
-            val source = inputStream.source().buffer()
-            val sink = activity.contentResolver.openOutputStream(newFile!!.uri)!!.sink().buffer()
+                val source = inputStream.source().buffer()
+                val sink = activity.contentResolver.openOutputStream(newFile!!.uri)!!.sink().buffer()
 
-            source.use { input ->
-                sink.use { output ->
-                    output.writeAll(input)
+                source.use { input ->
+                    sink.use { output ->
+                        output.writeAll(input)
+                    }
                 }
+            } else {
+                Timber.i("File presence check - Object ${bucketObject} already present. Skipping download")
             }
 
             return@withContext true

@@ -1,12 +1,17 @@
 package com.yopers.renee.fragments
 
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.text.InputType
 import android.view.*
 import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
@@ -17,10 +22,16 @@ import com.mikepenz.fastadapter.adapters.ItemAdapter
 import com.mikepenz.fastadapter.helpers.ActionModeHelper
 import com.mikepenz.fastadapter.select.SelectExtension
 import com.mikepenz.fastadapter.select.getSelectExtension
+import com.mikepenz.iconics.Iconics
+import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
+import com.mikepenz.iconics.utils.IconicsMenuInflaterUtil
+import com.mikepenz.iconics.utils.colorInt
 import com.mikepenz.materialize.util.UIUtils
 import com.yopers.renee.BucketItem
 import com.yopers.renee.MainActivity
 import com.yopers.renee.R
+import com.yopers.renee.background.SyncManager
 import com.yopers.renee.utils.*
 import io.minio.MinioClient
 import io.minio.Result
@@ -33,6 +44,7 @@ import moe.feng.common.view.breadcrumbs.DefaultBreadcrumbsCallback
 import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
 import timber.log.Timber
 import java.lang.Exception
+import java.util.concurrent.TimeUnit
 
 class BucketListFragment: Fragment() {
     private val INTENT_SELECT_PATH_REQUEST_CODE = 110
@@ -74,6 +86,7 @@ class BucketListFragment: Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        setHasOptionsMenu(true)
         return inflater.inflate(R.layout.object_list, container, false)
     }
 
@@ -194,6 +207,13 @@ class BucketListFragment: Fragment() {
         list.adapter = fastAdapter
 
         loadBucketObjects("")
+
+        // Background worker manager test
+//        val syncWorkRequest = OneTimeWorkRequestBuilder<SyncManager>().build()
+//        val syncWorkRequest = PeriodicWorkRequestBuilder<SyncManager>(15, TimeUnit.MINUTES).build()
+//        Timber.i("Background task UUID ${syncWorkRequest.id}")
+//        WorkManager.getInstance(context!!).enqueue(syncWorkRequest)
+//        WorkManager.getInstance(context!!).cancelAllWork()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -328,6 +348,15 @@ class BucketListFragment: Fragment() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.options, menu)
+
+        menu.findItem(R.id.menuSync).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync_disabled).actionBar().colorInt(Color.WHITE)
+        menu.findItem(R.id.menuPin).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_turned_in_not).actionBar().colorInt(Color.WHITE)
+
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
     internal inner class ActionBarCallBack : ActionMode.Callback {
 
         override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
@@ -401,6 +430,8 @@ class BucketListFragment: Fragment() {
         }
 
         override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+            menu.findItem(R.id.item_download).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_file_download).actionBar().colorInt(Color.WHITE)
+            menu.findItem(R.id.item_delete).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_delete).actionBar().colorInt(Color.WHITE)
             return true
         }
 

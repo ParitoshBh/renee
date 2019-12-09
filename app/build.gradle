@@ -31,6 +31,9 @@ android {
     dataBinding {
         enabled = true
     }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
 
 dependencies {
@@ -47,6 +50,7 @@ dependencies {
     }
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation "androidx.annotation:annotation:1.1.0"
+    implementation "androidx.work:work-runtime-ktx:2.2.0"
     implementation "com.google.android.material:material:1.0.0"
     implementation 'moe.feng:BreadcrumbsView:0.2.1'
     implementation 'androidx.recyclerview:recyclerview-selection:1.0.0'
@@ -67,6 +71,8 @@ dependencies {
     implementation 'com.squareup.okio:okio:2.4.0'
     implementation 'com.afollestad.material-dialogs:core:3.1.1'
     implementation 'com.afollestad.material-dialogs:input:3.1.1'
+    implementation 'com.google.guava:guava:27.0.1-android'
+    implementation "com.mikepenz:iconics-views:4.0.2"
 }
 
 def static getApiKey(){

@@ -1,5 +1,6 @@
 package com.yopers.renee
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -24,8 +25,12 @@ import com.mikepenz.materialdrawer.model.interfaces.IProfile
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import com.yopers.renee.fragments.BucketListFragment
 import com.yopers.renee.fragments.OnBoardingFragment
+import com.yopers.renee.fragments.SettingsFragment
+import com.yopers.renee.models.User
+import com.yopers.renee.models.User_
 import io.minio.errors.MinioException
-import io.paperdb.Paper
+import io.objectbox.Box
+import io.objectbox.kotlin.boxFor
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.*
 import moe.feng.common.view.breadcrumbs.BreadcrumbsView
@@ -40,7 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var headerResult: AccountHeader
     private lateinit var navigationDrawer: Drawer
     private lateinit var mBreadcrumbsView: BreadcrumbsView
-    lateinit var userConfig: Map<String, String>
+    lateinit var user: User
     private var navigationDrawerSelectedItemPosition: Int = 0
 
     private val parentJob = Job()
@@ -54,14 +59,12 @@ class MainActivity : AppCompatActivity() {
 
         initNavigationDrawer()
 
-        GlobalScope.launch(Dispatchers.Main) {
-            userConfig = getUserConfigs()
-            if (userConfig.isEmpty()) {
-                initOnboarding("add")
-            } else {
-                Timber.i("Loaded user configs - ${userConfig}")
-                initApp(userConfig)
-            }
+        user = getUserConfigs()
+        if (user.endPoint != null) {
+            Timber.i("Loaded user configs - ${user}")
+            initApp(user)
+        } else {
+            initOnboarding("add")
         }
     }
 
@@ -80,7 +83,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun updateNavigationDrawerHeader() {
-        if (userConfig.isEmpty()) {
+        if (user.endPoint.isNullOrEmpty()) {
             headerResult = AccountHeaderBuilder()
                 .withActivity(this)
                 .withCompactStyle(true)
@@ -96,16 +99,23 @@ class MainActivity : AppCompatActivity() {
                 .withActivity(this)
                 .withCompactStyle(true)
                 .addProfiles(
-                    ProfileDrawerItem().withName(userConfig["niceName"]).withEmail(userConfig["endpoint"]).withIcon(R.drawable.ic_user),
+                    ProfileDrawerItem().withName(user.niceName).withEmail(user.endPoint).withIcon(R.drawable.ic_user),
                     ProfileSettingDrawerItem().withName("Logout").withIcon(GoogleMaterial.Icon.gmd_cloud_off).withIdentifier(100001) ,
                     ProfileSettingDrawerItem().withName("Settings").withIcon(GoogleMaterial.Icon.gmd_settings).withIdentifier(100002)
                 )
                 .withOnAccountHeaderListener(object : AccountHeader.OnAccountHeaderListener {
                     override fun onProfileChanged(view: View?, profile: IProfile<*>, current: Boolean): Boolean {
-                        if (profile.identifier == 100001.toLong()) {
-                            Timber.i("Account header clicked ${profile.identifier}")
-                            logout()
+                        when (profile.identifier) {
+                            100001.toLong() -> {
+                                Timber.i("Account header clicked ${profile.identifier}")
+                                logout()
+                            }
+                            100002.toLong() -> {
+                                Timber.i("Account header clicked ${profile.identifier}")
+                                openSettings()
+                            }
                         }
+
                         return false
                     }
                 })
@@ -124,37 +134,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun logout() {
-        coroutineScope.launch(Dispatchers.Main) {
-            // Clear database
-            clearDatabase()
+        // Clear database
+        clearDatabase()
 
-            // Clear user config
-            userConfig = emptyMap()
+        // Clear user config
+        user = User()
 
-            // Clear toolbar subtitle
-            toolbar.subtitle = ""
+        // Clear toolbar subtitle
+        toolbar.subtitle = ""
 
-            // Hide breadcrumb view
-            mBreadcrumbsView.visibility = View.GONE
+        // Hide breadcrumb view
+        mBreadcrumbsView.visibility = View.GONE
 
-            // Clear navigation drawer
-            navigationDrawer.removeAllItems()
-            navigationDrawer.removeAllStickyFooterItems()
-            navigationDrawer.removeHeader()
+        // Clear navigation drawer
+        navigationDrawer.removeAllItems()
+        navigationDrawer.removeAllStickyFooterItems()
+        navigationDrawer.removeHeader()
 
-            // Show onboarding
-            initOnboarding("replace")
-        }
+        // Show onboarding
+        initOnboarding("replace")
     }
 
-    private suspend fun clearDatabase() =
-        withContext(Dispatchers.IO) {
-            return@withContext Paper.book().destroy()
-        }
+    private fun openSettings() {
+        val intent = Intent(this, SettingsActivity::class.java)
+        startActivity(intent)
+    }
 
-    private fun initApp(userConfig: Map<String, String>) {
+    private fun clearDatabase() {
+        val boxStore = ObjectBox.boxStore
+
+        boxStore.close()
+        boxStore.deleteAllFiles()
+    }
+
+    private fun initApp(user: User) {
         Timber.i("Initialize app with user configs")
-        buildMinioClient(userConfig)
+        buildMinioClient(user)
         updateNavigationDrawerHeader()
 
         GlobalScope.launch(Dispatchers.Main) {
@@ -170,7 +185,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun buildNavigationDrawer(buckets: List<Bucket>) {
+        Timber.i("Build navigation drawer")
+
         for ((index, bucket) in buckets.withIndex()) {
+            Timber.i("Add drawer item ${bucket.name()}")
+
             navigationDrawer.addItem(PrimaryDrawerItem()
                 .withIdentifier(index.toLong())
                 .withName(bucket.name())
@@ -181,12 +200,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun buildMinioClient(userConfig: Map<String, String>): MinioClient {
-        minioClient = MinioClient(
-            userConfig["endpoint"],
-            userConfig["accessKey"],
-            userConfig["secretKey"]
-        )
+    fun buildMinioClient(user: User): MinioClient {
+        minioClient = MinioClient(user.endPoint, user.accessKey, user.secretKey)
         minioClient.setTimeout(TimeUnit.SECONDS.toMillis(10),0,0)
 
         return minioClient
@@ -250,14 +265,14 @@ class MainActivity : AppCompatActivity() {
     private fun addFragment(bucketName: String) {
         supportFragmentManager
             .beginTransaction()
-            .add(R.id.root_layout, BucketListFragment.newInstance(bucketName, minioClient, userConfig), "bucket_list")
+            .add(R.id.root_layout, BucketListFragment.newInstance(bucketName, minioClient, user), "bucket_list")
             .commit()
     }
 
     private fun replaceFragment(bucketName: String) {
         supportFragmentManager
             .beginTransaction()
-            .replace(R.id.root_layout, BucketListFragment.newInstance(bucketName, minioClient, userConfig), "bucket_list")
+            .replace(R.id.root_layout, BucketListFragment.newInstance(bucketName, minioClient, user), "bucket_list")
             .commit()
     }
 
@@ -275,15 +290,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun getUserConfigs(): Map<String, String> {
-        return withContext(Dispatchers.IO) {
-            val userConfig: Map<String, String>? = Paper.book().read("userConfig")
-            if (userConfig.isNullOrEmpty()) {
-                emptyMap<String, String>()
-            } else {
-                userConfig
-            }
+    private fun getUserConfigs(): User {
+        val userBox: Box<User> = ObjectBox.boxStore.boxFor()
+        val user: User? = userBox.query().equal(User_.isActive, true).build().findFirst()
+
+        if (user != null ) {
+            return user
         }
+
+        return User()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

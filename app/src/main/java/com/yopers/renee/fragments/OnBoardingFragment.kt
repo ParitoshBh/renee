@@ -12,7 +12,6 @@ import com.yopers.renee.onboarding.EndpointStep
 import ernestoyaquello.com.verticalstepperform.listener.StepperFormListener
 import io.minio.MinioClient
 import io.minio.messages.Bucket
-import io.paperdb.Paper
 import kotlinx.android.synthetic.main.onboarding.*
 import kotlinx.android.synthetic.main.step_credentials.view.*
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +21,11 @@ import kotlinx.coroutines.withContext
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
 import com.google.android.material.snackbar.Snackbar
+import com.yopers.renee.ObjectBox
+import com.yopers.renee.models.User
 import com.yopers.renee.onboarding.NicenameStep
+import io.objectbox.Box
+import io.objectbox.kotlin.boxFor
 import kotlinx.android.synthetic.main.activity_main.*
 import java.lang.Exception
 
@@ -75,20 +78,19 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
             llProgressBar.visibility = View.VISIBLE
 
             val parentActivity = (activity as MainActivity)
-            val endpoint = endpointStep.userNameView.text.toString()
-            val accessKey = credentialStep.credentialsView.accessKey.text.toString()
-            val secretKey = credentialStep.credentialsView.secretKey.text.toString()
-            val nicename = nicenameStep.niceNameView.text.toString()
-
-            val userConfig = mapOf<String, String>(
-                "endpoint" to endpoint,
-                "accessKey" to accessKey,
-                "secretKey" to secretKey,
-                "niceName" to nicename
+            val user = User(
+                endPoint = endpointStep.userNameView.text.toString(),
+                accessKey = credentialStep.credentialsView.accessKey.text.toString(),
+                secretKey = credentialStep.credentialsView.secretKey.text.toString(),
+                niceName = nicenameStep.niceNameView.text.toString(),
+                isActive = true
             )
-            parentActivity.userConfig = userConfig
-            val minioClient  = parentActivity.buildMinioClient(userConfig)
-            val buckets = pingHost(minioClient, endpoint, accessKey, secretKey, nicename)
+
+            parentActivity.user = user
+
+            val minioClient  = parentActivity.buildMinioClient(user)
+
+            val buckets = pingHost(minioClient, user)
 
             if (buckets.isNotEmpty()) {
                 parentActivity.buildNavigationDrawer(buckets)
@@ -107,18 +109,13 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private suspend fun pingHost(minioClient: MinioClient, endpoint: String, accessKey: String,
-                                 secretKey: String, nicename: String): List<Bucket> {
+    private suspend fun pingHost(minioClient: MinioClient, user: User): List<Bucket> {
         return withContext(Dispatchers.IO) {
             try {
                 val buckets = minioClient.listBuckets()
                 if (buckets.isNotEmpty()) {
-                    Paper.book().write("userConfig", mapOf<String, String>(
-                        "endpoint" to endpoint,
-                        "accessKey" to accessKey,
-                        "secretKey" to secretKey,
-                        "niceName" to nicename
-                    ))
+                    val userBox: Box<User> = ObjectBox.boxStore.boxFor()
+                    userBox.put(user)
                     buckets
                 } else {
                     emptyList<Bucket>()
@@ -126,7 +123,6 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
             } catch (e: Exception) {
                 emptyList<Bucket>()
             }
-
         }
     }
 

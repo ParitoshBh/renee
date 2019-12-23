@@ -1,0 +1,97 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:3212145607478037627",
+      "lastPropertyId": "5:3009996838822069715",
+      "name": "Task",
+      "properties": [
+        {
+          "id": "1:6515780586779632893",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6752816563571018401",
+          "name": "taskId",
+          "type": 9
+        },
+        {
+          "id": "4:3317747939680630892",
+          "name": "source",
+          "type": 9
+        },
+        {
+          "id": "5:3009996838822069715",
+          "name": "destination",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:4276306687172029899",
+      "lastPropertyId": "10:3811396711944045085",
+      "name": "User",
+      "properties": [
+        {
+          "id": "1:2107067245842734183",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "5:1010861273824477477",
+          "name": "endPoint",
+          "type": 9
+        },
+        {
+          "id": "6:1681599375943028753",
+          "name": "accessKey",
+          "type": 9
+        },
+        {
+          "id": "7:9107473751799389013",
+          "name": "secretKey",
+          "type": 9
+        },
+        {
+          "id": "8:8284766538952537252",
+          "name": "niceName",
+          "type": 9
+        },
+        {
+          "id": "9:582552950250515954",
+          "name": "defaultDownloadLocation",
+          "type": 9
+        },
+        {
+          "id": "10:3811396711944045085",
+          "name": "isActive",
+          "type": 1,
+          "flags": 2
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "2:4276306687172029899",
+  "lastIndexId": "0:0",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [
+    4820720138748521148,
+    7851919135218085454,
+    1063563830572056971,
+    2356170160737231555
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}

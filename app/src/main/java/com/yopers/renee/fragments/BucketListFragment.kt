@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
@@ -30,13 +31,18 @@ import com.mikepenz.iconics.utils.colorInt
 import com.mikepenz.materialize.util.UIUtils
 import com.yopers.renee.BucketItem
 import com.yopers.renee.MainActivity
+import com.yopers.renee.ObjectBox
 import com.yopers.renee.R
 import com.yopers.renee.background.SyncManager
+import com.yopers.renee.models.Task
+import com.yopers.renee.models.User
 import com.yopers.renee.utils.*
 import io.minio.MinioClient
 import io.minio.Result
 import io.minio.errors.MinioException
 import io.minio.messages.Item
+import io.objectbox.Box
+import io.objectbox.kotlin.boxFor
 import kotlinx.android.synthetic.main.object_list.*
 import kotlinx.coroutines.*
 import moe.feng.common.view.breadcrumbs.BreadcrumbsView
@@ -49,12 +55,13 @@ import java.util.concurrent.TimeUnit
 class BucketListFragment: Fragment() {
     private val INTENT_SELECT_PATH_REQUEST_CODE = 110
     private val INTENT_SELECT_FILE_REQUEST_CODE = 111
+    private val INTENT_SELECT_DESTINATION_PATH_REQUEST_CODE = 112
     var itemAdapter = ItemAdapter<BucketItem>()
     private lateinit var minioClient: MinioClient
     private lateinit var fastAdapter: FastAdapter<BucketItem>
     private lateinit var selectedBucket: String
     private var selectedBucketPrefix = ""
-    private lateinit var userConfig: MutableMap<String, String>
+    private lateinit var user: User
     private lateinit var toolbar: Toolbar
     private lateinit var mBreadcrumbsView: BreadcrumbsView
     private lateinit var mActionModeHelper: ActionModeHelper<BucketItem>
@@ -66,13 +73,13 @@ class BucketListFragment: Fragment() {
     companion object {
 
         @JvmStatic
-        fun newInstance(bucketName: String, mClient: MinioClient, mConfig: Map<String, String>) =
+        fun newInstance(bucketName: String, mClient: MinioClient, mConfig: User) =
             BucketListFragment().apply {
                 arguments = Bundle().apply {
                     // putInt(ARG_COLUMN_COUNT, columnCount)
                     selectedBucket = bucketName
                     minioClient = mClient
-                    userConfig = mConfig.toMutableMap()
+                    user = mConfig
                 }
             }
     }
@@ -208,11 +215,6 @@ class BucketListFragment: Fragment() {
 
         loadBucketObjects("")
 
-        // Background worker manager test
-//        val syncWorkRequest = OneTimeWorkRequestBuilder<SyncManager>().build()
-//        val syncWorkRequest = PeriodicWorkRequestBuilder<SyncManager>(15, TimeUnit.MINUTES).build()
-//        Timber.i("Background task UUID ${syncWorkRequest.id}")
-//        WorkManager.getInstance(context!!).enqueue(syncWorkRequest)
 //        WorkManager.getInstance(context!!).cancelAllWork()
     }
 
@@ -224,8 +226,8 @@ class BucketListFragment: Fragment() {
                 if (data != null) {
                     Timber.i("Selected download location ${data.data.toString()}")
                     coroutineScope.launch(Dispatchers.Main) {
-                        userConfig.put("downloadLocation", data.data.toString())
-                        Database().write("userConfig", userConfig)
+//                        userConfig.put("downloadLocation", data.data.toString())
+//                        Database().write("userConfig", userConfig)
                         Snackbar.make(
                             activity!!.findViewById(R.id.root_layout),
                             "Saved selected download path. Please download object(s) again",
@@ -257,6 +259,24 @@ class BucketListFragment: Fragment() {
                     Snackbar.make(
                         activity!!.findViewById(R.id.root_layout),
                         "Failed to select a file. Please try again",
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
+            }
+            INTENT_SELECT_DESTINATION_PATH_REQUEST_CODE -> {
+                if (data != null) {
+                    Timber.i("Selected destination path ${data.data.toString()}")
+                    val syncWorkRequest = PeriodicWorkRequestBuilder<SyncManager>(15, TimeUnit.MINUTES).build()
+
+                    val taskBox: Box<Task> = ObjectBox.boxStore.boxFor()
+                    taskBox.put(Task(taskId = syncWorkRequest.id.toString(), source = "$selectedBucket/$selectedBucketPrefix", destination = data.data.toString()))
+
+                    WorkManager.getInstance(context!!).enqueue(syncWorkRequest)
+                } else {
+                    // Failed to save setting
+                    Snackbar.make(
+                        activity!!.findViewById(R.id.root_layout),
+                        "Failed to get selected path. Please try again",
                         Snackbar.LENGTH_LONG
                     ).show()
                 }
@@ -357,6 +377,29 @@ class BucketListFragment: Fragment() {
         super.onCreateOptionsMenu(menu, inflater)
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle item selection
+        return when (item.itemId) {
+            R.id.menuSync-> {
+                Timber.i("Enable sync for given path ${selectedBucket}/${selectedBucketPrefix}")
+                showDestinationPicker()
+                true
+            }
+            R.id.menuPin-> {
+                Timber.i("Pin given path")
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showDestinationPicker() {
+        startActivityForResult(
+            Intent().setAction(Intent.ACTION_OPEN_DOCUMENT_TREE),
+            INTENT_SELECT_DESTINATION_PATH_REQUEST_CODE
+        )
+    }
+
     internal inner class ActionBarCallBack : ActionMode.Callback {
 
         override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
@@ -377,14 +420,10 @@ class BucketListFragment: Fragment() {
                         selectExtension.selections.size
                     )
 
-                    for (pos in selectExtension.selections) {
-                        Timber.i("Selected bucket object ${fastAdapter.getItem(pos)?.objectName} from bucket ${selectedBucket} and prefix ${selectedBucketPrefix}")
-                        if (userConfig["downloadLocation"].isNullOrEmpty()) {
-                            startActivityForResult(
-                                Intent().setAction(Intent.ACTION_OPEN_DOCUMENT_TREE),
-                                INTENT_SELECT_PATH_REQUEST_CODE
-                            )
-                        } else {
+                    // Check if download location is set
+                    if (user.defaultDownloadLocation != null) {
+                        for (pos in selectExtension.selections) {
+                            Timber.i("Selected bucket object ${fastAdapter.getItem(pos)?.objectName} from bucket ${selectedBucket} and prefix ${selectedBucketPrefix}")
                             Download().bucketObject(
                                 selectedBucket,
                                 selectedBucketPrefix,
@@ -393,11 +432,18 @@ class BucketListFragment: Fragment() {
                                 coroutineScope,
                                 minioClient,
                                 activity!!,
-                                userConfig["downloadLocation"]!!,
+                                user.defaultDownloadLocation!!,
                                 notification
                             )
                         }
+                    } else {
+                        Snackbar.make(
+                            activity!!.findViewById(R.id.root_layout),
+                            "Default download location not set. Please select one in settings and try again",
+                            Snackbar.LENGTH_LONG
+                        ).show()
                     }
+
                 }
                 R.id.item_delete -> {
                     val deleteCandidates = selectExtension.selections

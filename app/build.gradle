@@ -4,6 +4,7 @@ apply plugin: 'com.bugsnag.android.gradle'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'io.objectbox' // Apply last
 
 android {
     compileSdkVersion 29
@@ -51,6 +52,7 @@ dependencies {
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation "androidx.annotation:annotation:1.1.0"
     implementation "androidx.work:work-runtime-ktx:2.2.0"
+    implementation "androidx.preference:preference:1.1.0"
     implementation "com.google.android.material:material:1.0.0"
     implementation 'moe.feng:BreadcrumbsView:0.2.1'
     implementation 'androidx.recyclerview:recyclerview-selection:1.0.0'
@@ -60,7 +62,6 @@ dependencies {
     implementation "com.mikepenz:fastadapter-extensions-ui:4.0.1"
     implementation 'com.mikepenz:fastadapter-extensions-utils:4.0.1'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
-    implementation 'io.paperdb:paperdb:2.6'
     implementation 'com.ernestoyaquello.stepperform:vertical-stepper-form:2.2.1'
     implementation 'com.bugsnag:bugsnag-android:4.+'
     implementation 'com.jakewharton.timber:timber:4.7.1'

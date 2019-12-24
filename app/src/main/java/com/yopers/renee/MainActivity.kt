@@ -17,6 +17,8 @@ import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
 import com.mikepenz.materialdrawer.DrawerBuilder
+import com.mikepenz.materialdrawer.holder.ImageHolder
+import com.mikepenz.materialdrawer.holder.StringHolder
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem
 import com.mikepenz.materialdrawer.model.ProfileSettingDrawerItem
 import com.mikepenz.materialdrawer.model.SecondaryDrawerItem
@@ -45,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var headerResult: AccountHeader
     private lateinit var navigationDrawer: Drawer
     private lateinit var mBreadcrumbsView: BreadcrumbsView
+    private val userBox: Box<User> = ObjectBox.boxStore.boxFor()
     lateinit var user: User
     private var navigationDrawerSelectedItemPosition: Int = 0
 
@@ -186,18 +189,24 @@ class MainActivity : AppCompatActivity() {
 
     fun buildNavigationDrawer(buckets: List<Bucket>) {
         Timber.i("Build navigation drawer")
+        var selectedDrawerItemPosition: Long = 0
 
         for ((index, bucket) in buckets.withIndex()) {
             Timber.i("Add drawer item ${bucket.name()}")
 
-            navigationDrawer.addItem(PrimaryDrawerItem()
-                .withIdentifier(index.toLong())
-                .withName(bucket.name())
-            )
-            if (index == 0) {
-                navigationDrawer.setSelection(navigationDrawer.getDrawerItem(index.toLong())!!, true)
+            val drawerItem = PrimaryDrawerItem().withIdentifier(index.toLong()).withTag(bucket.name()).withName(bucket.name())
+
+            if (user.favouriteBucket == bucket.name()) {
+                selectedDrawerItemPosition = index.toLong()
+                drawerItem.badge = StringHolder("*")
             }
+
+            navigationDrawer.addItem(drawerItem)
         }
+
+        navigationDrawer.setSelection(selectedDrawerItemPosition, true)
+
+        Timber.i("Current selection ${navigationDrawer.currentSelection}")
     }
 
     fun buildMinioClient(user: User): MinioClient {
@@ -247,7 +256,44 @@ class MainActivity : AppCompatActivity() {
                     return false
                 }
             })
+            .withOnDrawerItemLongClickListener(
+                object: Drawer.OnDrawerItemLongClickListener {
+                    override fun onItemLongClick(view: View, position: Int, drawerItem: IDrawerItem<*>): Boolean {
+                        val drawerItemName = (drawerItem as Nameable<*>).name.toString()
+
+                        // Update user with favourited bucket, if different
+                        if (user.favouriteBucket == null) {
+                            Timber.i("Mark bucket as favourite")
+                            // Favourite selected bucket
+                            navigationDrawer.updateBadge((position - 1).toLong(), StringHolder("*"))
+                            favouriteBucket(drawerItemName)
+                        } else {
+                            if (user.favouriteBucket == drawerItemName) {
+                                Timber.i("Bucket already favourite. Skipping database update")
+                            } else {
+                                Timber.i("Bucket name is not same, mark Bucket as favourite")
+                                // Un-favourite previously marked bucket
+                                val previousFavourite = navigationDrawer.getDrawerItem(user.favouriteBucket.orEmpty())
+                                if (previousFavourite != null) {
+                                    navigationDrawer.updateBadge(previousFavourite.identifier, StringHolder(null))
+                                }
+                                // Favourite selected bucket
+                                navigationDrawer.updateBadge((position - 1).toLong(), StringHolder("*"))
+                                favouriteBucket(drawerItemName)
+                            }
+                        }
+
+                        return true
+                    }
+                }
+            )
             .build()
+    }
+
+    private fun favouriteBucket(bucketName: String) {
+        user.favouriteBucket = bucketName
+        userBox.put(user)
+        user = getUserConfigs()
     }
 
     fun loadFragment(bucketName: String) {
@@ -291,7 +337,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getUserConfigs(): User {
-        val userBox: Box<User> = ObjectBox.boxStore.boxFor()
         val user: User? = userBox.query().equal(User_.isActive, true).build().findFirst()
 
         if (user != null ) {

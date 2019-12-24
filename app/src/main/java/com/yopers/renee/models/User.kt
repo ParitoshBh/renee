@@ -11,5 +11,6 @@ data class User(
     var secretKey: String? = null,
     var niceName: String? = null,
     var defaultDownloadLocation: String? = null,
+    var favouriteBucket: String? = null,
     val isActive: Boolean? = false
 )

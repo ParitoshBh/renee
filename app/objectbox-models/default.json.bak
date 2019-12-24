@@ -34,7 +34,7 @@
     },
     {
       "id": "2:4276306687172029899",
-      "lastPropertyId": "8:8284766538952537252",
+      "lastPropertyId": "10:3811396711944045085",
       "name": "User",
       "properties": [
         {
@@ -62,6 +62,17 @@
           "id": "8:8284766538952537252",
           "name": "niceName",
           "type": 9
+        },
+        {
+          "id": "9:582552950250515954",
+          "name": "defaultDownloadLocation",
+          "type": 9
+        },
+        {
+          "id": "10:3811396711944045085",
+          "name": "isActive",
+          "type": 1,
+          "flags": 2
         }
       ],
       "relations": []

@@ -14,6 +14,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.customview.customView
 import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
 import com.leinardi.android.speeddial.SpeedDialView
@@ -35,6 +36,7 @@ import com.yopers.renee.ObjectBox
 import com.yopers.renee.R
 import com.yopers.renee.background.SyncManager
 import com.yopers.renee.models.Task
+import com.yopers.renee.models.Task_
 import com.yopers.renee.models.User
 import com.yopers.renee.utils.*
 import io.minio.MinioClient
@@ -43,6 +45,7 @@ import io.minio.errors.MinioException
 import io.minio.messages.Item
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
+import kotlinx.android.synthetic.main.dialog_sync_overview.*
 import kotlinx.android.synthetic.main.object_list.*
 import kotlinx.coroutines.*
 import moe.feng.common.view.breadcrumbs.BreadcrumbsView
@@ -69,6 +72,8 @@ class BucketListFragment: Fragment() {
 
     private val parentJob = Job()
     private val coroutineScope = CoroutineScope(Dispatchers.Main + parentJob)
+
+    private val taskBox: Box<Task> = ObjectBox.boxStore.boxFor()
 
     companion object {
 
@@ -266,12 +271,34 @@ class BucketListFragment: Fragment() {
             INTENT_SELECT_DESTINATION_PATH_REQUEST_CODE -> {
                 if (data != null) {
                     Timber.i("Selected destination path ${data.data.toString()}")
-                    val syncWorkRequest = PeriodicWorkRequestBuilder<SyncManager>(15, TimeUnit.MINUTES).build()
+                    MaterialDialog(context!!).show {
+                        customView(R.layout.dialog_sync_overview)
 
-                    val taskBox: Box<Task> = ObjectBox.boxStore.boxFor()
-                    taskBox.put(Task(taskId = syncWorkRequest.id.toString(), source = "$selectedBucket/$selectedBucketPrefix", destination = data.data.toString()))
+                        syncOverviewSource.text = "$selectedBucket/$selectedBucketPrefix"
+                        syncOverviewDestination.text = data.data.toString()
 
-                    WorkManager.getInstance(context!!).enqueue(syncWorkRequest)
+                        positiveButton (text = "Enable") {
+                            val syncWorkRequest = PeriodicWorkRequestBuilder<SyncManager>(15, TimeUnit.MINUTES).build()
+
+                            taskBox.put(
+                                Task(
+                                    userId = user.id,
+                                    taskId = syncWorkRequest.id.toString(),
+                                    source = "$selectedBucket/$selectedBucketPrefix",
+                                    destination = data.data.toString()
+                                )
+                            )
+
+                            WorkManager.getInstance(context).enqueue(syncWorkRequest)
+
+                            Snackbar.make(
+                                activity!!.findViewById(R.id.root_layout),
+                                "Added sync",
+                                Snackbar.LENGTH_LONG
+                            ).show()
+                        }
+                        negativeButton(text = "Cancel")
+                    }
                 } else {
                     // Failed to save setting
                     Snackbar.make(
@@ -371,8 +398,16 @@ class BucketListFragment: Fragment() {
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.options, menu)
 
-        menu.findItem(R.id.menuSync).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync_disabled).actionBar().colorInt(Color.WHITE)
-        menu.findItem(R.id.menuPin).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_turned_in_not).actionBar().colorInt(Color.WHITE)
+        // Check if current bucket (path) has been synchronized
+        val task = taskBox.query().equal(Task_.source, "$selectedBucket/$selectedBucketPrefix").build().findFirst()
+
+        // Assign menu item sync based on that
+        if (task != null) {
+            menu.findItem(R.id.menuSync).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync).actionBar().colorInt(Color.WHITE)
+        } else {
+            menu.findItem(R.id.menuSync).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync_disabled).actionBar().colorInt(Color.WHITE)
+        }
+
 
         super.onCreateOptionsMenu(menu, inflater)
     }
@@ -382,14 +417,20 @@ class BucketListFragment: Fragment() {
         return when (item.itemId) {
             R.id.menuSync-> {
                 Timber.i("Enable sync for given path ${selectedBucket}/${selectedBucketPrefix}")
-                showDestinationPicker()
-                true
-            }
-            R.id.menuPin-> {
-                Timber.i("Pin given path")
+                showSyncDialog()
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showSyncDialog() {
+        MaterialDialog(context!!).show {
+            title(text = "Choose Sync Target")
+            message(text = "Please select a folder to which you want to sync contents of '${selectedBucket}/${selectedBucketPrefix}'")
+            positiveButton (text = "Select") { dialog ->
+                showDestinationPicker()
+            }
         }
     }
 

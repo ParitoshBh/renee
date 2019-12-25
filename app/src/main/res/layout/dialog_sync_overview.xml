@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:padding="15sp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Source"
+        android:textColor="?android:textColorSecondary"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/syncOverviewSource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Source Path"
+        android:textColor="?android:textColorPrimary"
+        android:textSize="14sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="Destination"
+        android:textColor="?android:textColorSecondary"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/syncOverviewDestination"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Destination Path"
+        android:textColor="?android:textColorPrimary"
+        android:textSize="14sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="Sync Frequency"
+        android:textColor="?android:textColorSecondary"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/syncOverviewFrequency"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Every 15 Minutes"
+        android:textColor="?android:textColorPrimary"
+        android:textSize="14sp" />
+
+</LinearLayout>

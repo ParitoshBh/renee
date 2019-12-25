@@ -5,8 +5,4 @@
         android:title="Sync Path"
         app:showAsAction="always" >
     </item>
-    <item android:id="@+id/menuPin"
-        android:title="Pin Path"
-        app:showAsAction="always" >
-    </item>
 </menu>

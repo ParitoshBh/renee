@@ -30,6 +30,7 @@ import com.yopers.renee.fragments.OnBoardingFragment
 import com.yopers.renee.fragments.SettingsFragment
 import com.yopers.renee.models.User
 import com.yopers.renee.models.User_
+import com.yopers.renee.utils.Builder
 import io.minio.errors.MinioException
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
@@ -62,7 +63,7 @@ class MainActivity : AppCompatActivity() {
 
         initNavigationDrawer()
 
-        user = getUserConfigs()
+        user = Builder().user()
         if (user.endPoint != null) {
             Timber.i("Loaded user configs - ${user}")
             initApp(user)
@@ -127,6 +128,12 @@ class MainActivity : AppCompatActivity() {
                 SecondaryDrawerItem()
                     .withName(getString(R.string.nav_drawer_secondary_item_create_bucket))
                     .withIcon(GoogleMaterial.Icon.gmd_create)
+                    .withSelectable(false)
+            )
+            navigationDrawer.addStickyFooterItem(
+                SecondaryDrawerItem()
+                    .withName(getString(R.string.nav_drawer_secondary_item_sync_tasks))
+                    .withIcon(GoogleMaterial.Icon.gmd_sync)
             )
         }
 
@@ -172,7 +179,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initApp(user: User) {
         Timber.i("Initialize app with user configs")
-        buildMinioClient(user)
+        minioClient = Builder().minioClient(user)
         updateNavigationDrawerHeader()
 
         GlobalScope.launch(Dispatchers.Main) {
@@ -207,13 +214,6 @@ class MainActivity : AppCompatActivity() {
         navigationDrawer.setSelection(selectedDrawerItemPosition, true)
 
         Timber.i("Current selection ${navigationDrawer.currentSelection}")
-    }
-
-    fun buildMinioClient(user: User): MinioClient {
-        minioClient = MinioClient(user.endPoint, user.accessKey, user.secretKey)
-        minioClient.setTimeout(TimeUnit.SECONDS.toMillis(10),0,0)
-
-        return minioClient
     }
 
     private fun initNavigationDrawer() {
@@ -293,7 +293,7 @@ class MainActivity : AppCompatActivity() {
     private fun favouriteBucket(bucketName: String) {
         user.favouriteBucket = bucketName
         userBox.put(user)
-        user = getUserConfigs()
+        user = Builder().user()
     }
 
     fun loadFragment(bucketName: String) {
@@ -334,16 +334,6 @@ class MainActivity : AppCompatActivity() {
                 Pair(emptyList<Bucket>(), s.message.orEmpty())
             }
         }
-    }
-
-    private fun getUserConfigs(): User {
-        val user: User? = userBox.query().equal(User_.isActive, true).build().findFirst()
-
-        if (user != null ) {
-            return user
-        }
-
-        return User()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

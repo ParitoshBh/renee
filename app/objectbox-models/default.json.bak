@@ -34,7 +34,7 @@
     },
     {
       "id": "2:4276306687172029899",
-      "lastPropertyId": "10:3811396711944045085",
+      "lastPropertyId": "11:4100941814304520174",
       "name": "User",
       "properties": [
         {
@@ -73,6 +73,11 @@
           "name": "isActive",
           "type": 1,
           "flags": 2
+        },
+        {
+          "id": "11:4100941814304520174",
+          "name": "favouriteBucket",
+          "type": 9
         }
       ],
       "relations": []

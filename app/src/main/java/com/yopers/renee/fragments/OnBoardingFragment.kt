@@ -24,6 +24,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.yopers.renee.ObjectBox
 import com.yopers.renee.models.User
 import com.yopers.renee.onboarding.NicenameStep
+import com.yopers.renee.utils.Builder
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import kotlinx.android.synthetic.main.activity_main.*
@@ -88,7 +89,7 @@ class OnBoardingFragment: Fragment(), StepperFormListener {
 
             parentActivity.user = user
 
-            val minioClient  = parentActivity.buildMinioClient(user)
+            val minioClient  = Builder().minioClient(user)
 
             val buckets = pingHost(minioClient, user)
 

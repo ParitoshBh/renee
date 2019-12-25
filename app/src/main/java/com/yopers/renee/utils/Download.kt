@@ -23,7 +23,7 @@ class Download {
     fun bucketObject(selectedBucket: String, selectedBucketPrefix: String, bucketObject: String,
                      context: Context, coroutineScope: CoroutineScope, minioClient: MinioClient,
                      activity: Activity, downloadLocation: String, notification: Notification) {
-        Timber.i("Storage write permissions ${Permission().isAvailable(activity)}")
+        Timber.i("Storage write permissions ${Permission().isAvailable(context)}")
         if (!Permission().isAvailable(activity)) {
             Snackbar.make(
                 activity.findViewById(R.id.root_layout),
@@ -34,11 +34,10 @@ class Download {
         } else {
             Timber.i("Started downloading object ${bucketObject} from ${selectedBucket} bucket")
             coroutineScope.launch(Dispatchers.Main) {
-                val isSuccessful = initiateTransfer(
+                val isSuccessful = initiateBackgroundTransfer(
                     downloadLocation.toUri(),
                     context,
                     minioClient,
-                    activity,
                     selectedBucket,
                     selectedBucketPrefix,
                     bucketObject
@@ -53,18 +52,68 @@ class Download {
         }
     }
 
-    private suspend fun initiateTransfer(uri: Uri, context: Context, minioClient: MinioClient,
-                                         activity: Activity, selectedBucket: String,
-                                         selectedBucketPrefix: String, bucketObject: String
+    fun bucketObject(selectedBucket: String, selectedBucketPrefix: String, bucketObject: String,
+                     context: Context, minioClient: MinioClient, downloadLocation: String
+//                     ,notification: Notification
+    ) {
+        Timber.i("Storage write permissions ${Permission().isAvailable(context)}")
+        if (!Permission().isAvailable(context)) {
+//            Snackbar.make(
+//                activity.findViewById(R.id.root_layout),
+//                "Missing storage write permissions",
+//                Snackbar.LENGTH_LONG
+//            ).show()
+//            Permission().request(activity)
+            Timber.i("Missing storage write permissions")
+        } else {
+            Timber.i("Started downloading object ${bucketObject} from ${selectedBucket} bucket")
+            val isSuccessful = initiateTransfer(
+                downloadLocation.toUri(),
+                context,
+                minioClient,
+                selectedBucket,
+                selectedBucketPrefix,
+                bucketObject
+            )
+
+            if (isSuccessful) {
+                Timber.i("Downloaded ${bucketObject}")
+//                notification.update("Downloaded ${bucketObject}")
+            } else {
+                Timber.i("Failed to download ${bucketObject}")
+//                notification.update("Failed to download ${bucketObject}")
+            }
+        }
+    }
+
+    private suspend fun initiateBackgroundTransfer(uri: Uri, context: Context, minioClient: MinioClient,
+                                         selectedBucket: String, selectedBucketPrefix: String, bucketObject: String
     ) = withContext(Dispatchers.IO) {
+            return@withContext initiateTransfer(
+                uri,
+                context,
+                minioClient,
+                selectedBucket,
+                selectedBucketPrefix,
+                bucketObject
+            )
+    }
+
+    private fun initiateTransfer(uri: Uri, context: Context, minioClient: MinioClient, selectedBucket: String,
+                                 selectedBucketPrefix: String, bucketObject: String
+    ): Boolean {
         val pickedDir = DocumentFile.fromTreeUri(context, uri)
         try {
             if (pickedDir!!.findFile(bucketObject) === null) {
-                val newFile = pickedDir!!.createFile("application/gzip", bucketObject)
+                val objectStat = minioClient.statObject(selectedBucket, selectedBucketPrefix + bucketObject)
+                Timber.i("Object stat - $objectStat")
+                Timber.i("Object content type - ${objectStat.contentType()}")
+
+                val newFile = pickedDir!!.createFile(objectStat.contentType(), bucketObject)
                 val inputStream: InputStream = minioClient.getObject(selectedBucket, selectedBucketPrefix + bucketObject)
 
                 val source = inputStream.source().buffer()
-                val sink = activity.contentResolver.openOutputStream(newFile!!.uri)!!.sink().buffer()
+                val sink = context.contentResolver.openOutputStream(newFile!!.uri)!!.sink().buffer()
 
                 source.use { input ->
                     sink.use { output ->
@@ -75,10 +124,10 @@ class Download {
                 Timber.i("File presence check - Object ${bucketObject} already present. Skipping download")
             }
 
-            return@withContext true
+            return true
         } catch (e: Exception) {
             Timber.i("New File exception ${e}")
-            return@withContext false
+            return false
         }
     }
 }

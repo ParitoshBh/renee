@@ -5,11 +5,12 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.InputType
 import android.view.*
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
+import androidx.work.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.customview.customView
 import com.afollestad.materialdialogs.input.input
@@ -280,11 +281,42 @@ class BucketListFragment: Fragment() {
                     MaterialDialog(context!!).show {
                         customView(R.layout.dialog_sync_overview)
 
+                        // Populate sync frequency spinner
+                        val syncOverviewFrequency: Spinner = findViewById(R.id.syncOverviewFrequency)
+                        ArrayAdapter.createFromResource(
+                            context,
+                            R.array.sync_overview_frequency_array,
+                            R.layout.spinner_list_item
+                        ).also { adapter ->
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                            syncOverviewFrequency.adapter = adapter
+                        }
+
                         syncOverviewSource.text = "$selectedBucket/$selectedBucketPrefix"
                         syncOverviewDestination.text = data.data.toString()
 
                         positiveButton (text = "Enable") {
-                            val syncWorkRequest = PeriodicWorkRequestBuilder<SyncManager>(15, TimeUnit.MINUTES).build()
+                            Timber.i("Selected sync frequency ${syncOverviewFrequency.selectedItem.toString()}")
+                            val syncFrequency = syncOverviewFrequency.selectedItem.toString().split(" ")
+                            var timeUnit = TimeUnit.MINUTES
+
+                            val constraints = Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.UNMETERED)      // WiFi connection
+                                .setRequiresBatteryNotLow(true)                     // Battery not low
+                                .build()
+
+                            when (syncFrequency[1]) {
+                                "minutes" -> {
+                                    timeUnit = TimeUnit.MINUTES
+                                }
+                                "hour" -> {
+                                    timeUnit = TimeUnit.HOURS
+                                }
+                            }
+
+                            val syncWorkRequest = PeriodicWorkRequestBuilder<SyncManager>(syncFrequency[0].toLong(), timeUnit)
+                                .setConstraints(constraints)
+                                .build()
 
                             taskBox.put(
                                 Task(

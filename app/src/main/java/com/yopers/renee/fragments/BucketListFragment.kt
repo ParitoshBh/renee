@@ -2,17 +2,14 @@ package com.yopers.renee.fragments
 
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.drawable.Icon
 import android.os.Bundle
 import android.text.InputType
 import android.view.*
 import androidx.appcompat.view.ActionMode
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.customview.customView
 import com.afollestad.materialdialogs.input.input
@@ -24,10 +21,8 @@ import com.mikepenz.fastadapter.adapters.ItemAdapter
 import com.mikepenz.fastadapter.helpers.ActionModeHelper
 import com.mikepenz.fastadapter.select.SelectExtension
 import com.mikepenz.fastadapter.select.getSelectExtension
-import com.mikepenz.iconics.Iconics
 import com.mikepenz.iconics.IconicsDrawable
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
-import com.mikepenz.iconics.utils.IconicsMenuInflaterUtil
 import com.mikepenz.iconics.utils.colorInt
 import com.mikepenz.materialize.util.UIUtils
 import com.yopers.renee.BucketItem
@@ -52,7 +47,6 @@ import moe.feng.common.view.breadcrumbs.BreadcrumbsView
 import moe.feng.common.view.breadcrumbs.DefaultBreadcrumbsCallback
 import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
 import timber.log.Timber
-import java.lang.Exception
 import java.util.concurrent.TimeUnit
 
 class BucketListFragment: Fragment() {
@@ -219,8 +213,6 @@ class BucketListFragment: Fragment() {
         list.adapter = fastAdapter
 
         loadBucketObjects("")
-
-//        WorkManager.getInstance(context!!).cancelAllWork()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -231,8 +223,6 @@ class BucketListFragment: Fragment() {
                 if (data != null) {
                     Timber.i("Selected download location ${data.data.toString()}")
                     coroutineScope.launch(Dispatchers.Main) {
-//                        userConfig.put("downloadLocation", data.data.toString())
-//                        Database().write("userConfig", userConfig)
                         Snackbar.make(
                             activity!!.findViewById(R.id.root_layout),
                             "Saved selected download path. Please download object(s) again",

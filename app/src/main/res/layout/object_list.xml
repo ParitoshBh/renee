@@ -10,9 +10,11 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"
+        android:scrollbars="vertical"
+        android:scrollbarSize="5sp"
+        android:scrollbarThumbVertical="@color/colorAccent"
         android:layout_height="match_parent"
-        app:layoutManager="LinearLayoutManager"
-        tools:context=".view.MyQuoteListFragment" />
+        app:layoutManager="LinearLayoutManager" />
 
     <com.leinardi.android.speeddial.SpeedDialOverlayLayout
         android:id="@+id/overlay"

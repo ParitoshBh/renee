@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_margin="10sp"
+    android:layout_height="200dp"
+    app:cardCornerRadius="5sp"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/selectableItemBackground"
+        android:orientation="vertical">
+
+        <TextView
+            android:text="ID"
+            android:layout_marginStart="5sp"
+            android:layout_marginEnd="5sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="?android:textColorSecondary"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/taskName"
+            android:layout_marginStart="5sp"
+            android:layout_marginEnd="5sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2sp"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:text="Source Bucket"
+            android:layout_marginStart="5sp"
+            android:layout_marginEnd="5sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12sp"
+            android:textColor="?android:textColorSecondary"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/taskSource"
+            android:layout_marginStart="5sp"
+            android:layout_marginEnd="5sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2sp"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:text="Destination Path"
+            android:layout_marginStart="5sp"
+            android:layout_marginEnd="5sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12sp"
+            android:textColor="?android:textColorSecondary"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/taskDestination"
+            android:layout_marginStart="5sp"
+            android:layout_marginEnd="5sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2sp"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

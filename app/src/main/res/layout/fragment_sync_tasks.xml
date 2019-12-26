@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".fragments.SyncTasksFragment">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/taskList"
+        android:layout_width="match_parent"
+        android:scrollbars="vertical"
+        android:scrollbarSize="5sp"
+        android:scrollbarThumbVertical="@color/colorAccent"
+        android:layout_height="match_parent"
+        app:layoutManager="LinearLayoutManager" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

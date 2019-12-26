@@ -12,12 +12,12 @@ import android.view.View
 import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
+import com.mikepenz.iconics.typeface.library.fontawesome.FontAwesome
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
 import com.mikepenz.materialdrawer.DrawerBuilder
-import com.mikepenz.materialdrawer.holder.ImageHolder
 import com.mikepenz.materialdrawer.holder.StringHolder
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem
 import com.mikepenz.materialdrawer.model.ProfileSettingDrawerItem
@@ -27,9 +27,8 @@ import com.mikepenz.materialdrawer.model.interfaces.IProfile
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import com.yopers.renee.fragments.BucketListFragment
 import com.yopers.renee.fragments.OnBoardingFragment
-import com.yopers.renee.fragments.SettingsFragment
+import com.yopers.renee.fragments.SyncTasksFragment
 import com.yopers.renee.models.User
-import com.yopers.renee.models.User_
 import com.yopers.renee.utils.Builder
 import io.minio.errors.MinioException
 import io.objectbox.Box
@@ -40,7 +39,6 @@ import moe.feng.common.view.breadcrumbs.BreadcrumbsView
 import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
 import timber.log.Timber
 import java.net.SocketTimeoutException
-import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
 class MainActivity : AppCompatActivity() {
@@ -103,7 +101,7 @@ class MainActivity : AppCompatActivity() {
                 .withActivity(this)
                 .withCompactStyle(true)
                 .addProfiles(
-                    ProfileDrawerItem().withName(user.niceName).withEmail(user.endPoint).withIcon(R.drawable.ic_user),
+                    ProfileDrawerItem().withName(user.niceName).withEmail(user.accessKey).withIcon(FontAwesome.Icon.faw_user),
                     ProfileSettingDrawerItem().withName("Logout").withIcon(GoogleMaterial.Icon.gmd_cloud_off).withIdentifier(100001) ,
                     ProfileSettingDrawerItem().withName("Settings").withIcon(GoogleMaterial.Icon.gmd_settings).withIdentifier(100002)
                 )
@@ -243,6 +241,11 @@ class MainActivity : AppCompatActivity() {
                             }
                             positiveButton(R.string.dialog_button_positive_create_directory_name)
                         }
+                    } else if (drawerItemName.contentEquals(getString(R.string.nav_drawer_secondary_item_sync_tasks))) {
+                        supportFragmentManager
+                            .beginTransaction()
+                            .replace(R.id.root_layout, SyncTasksFragment.newInstance(user), "bucket_sync_task")
+                            .commit()
                     } else {
                         if (navigationDrawerSelectedItemPosition != position) {
                             navigationDrawerSelectedItemPosition = position

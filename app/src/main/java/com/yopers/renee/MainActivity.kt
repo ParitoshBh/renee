@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity() {
             headerResult = AccountHeaderBuilder()
                 .withActivity(this)
                 .withCompactStyle(true)
-                .addProfiles(ProfileDrawerItem().withEmail("Add Account").withIcon(R.drawable.ic_user).withNameShown(false))
+                .addProfiles(ProfileDrawerItem().withEmail("Add Account").withIcon(FontAwesome.Icon.faw_user).withNameShown(false))
                 .withOnAccountHeaderListener(object : AccountHeader.OnAccountHeaderListener {
                     override fun onProfileChanged(view: View?, profile: IProfile<*>, current: Boolean): Boolean {
                         return false
@@ -242,6 +242,7 @@ class MainActivity : AppCompatActivity() {
                             positiveButton(R.string.dialog_button_positive_create_directory_name)
                         }
                     } else if (drawerItemName.contentEquals(getString(R.string.nav_drawer_secondary_item_sync_tasks))) {
+                        navigationDrawerSelectedItemPosition = position
                         supportFragmentManager
                             .beginTransaction()
                             .replace(R.id.root_layout, SyncTasksFragment.newInstance(user), "bucket_sync_task")

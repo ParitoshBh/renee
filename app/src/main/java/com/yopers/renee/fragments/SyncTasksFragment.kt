@@ -51,6 +51,7 @@ class SyncTasksFragment: Fragment() {
         toolbar = activity!!.findViewById(R.id.toolbar)
         mBreadcrumbsView = activity!!.findViewById(R.id.breadcrumbs_view)
 
+        toolbar.subtitle = "Synchronized Tasks"
         mBreadcrumbsView.visibility = View.GONE
 
         fastAdapter = FastAdapter.with(itemAdapter)
@@ -73,8 +74,6 @@ class SyncTasksFragment: Fragment() {
         val tasks: List<Task> = taskBox.query().equal(Task_.userId, user.id).build().find()
         Timber.i("Found ${tasks.size} assigned background tasks")
 
-        toolbar.subtitle = "${tasks.size} Synchronized Tasks"
-
         tasks.forEach {
             itemAdapter.add(TaskItem().build(it.id, it.taskId!!, it.source!!, it.destination!!))
         }
@@ -96,8 +95,8 @@ class SyncTasksFragment: Fragment() {
                 Timber.i("Removed task from database")
 
                 // Update list adapter
+                itemAdapter.remove(position)
                 fastAdapter.notifyAdapterItemRemoved(position)
-                fastAdapter.notifyAdapterDataSetChanged()
             }
             positiveButton (text = "Cancel") {
 

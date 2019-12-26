@@ -14,6 +14,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.afollestad.materialdialogs.customview.customView
 import com.afollestad.materialdialogs.input.input
 import com.google.android.material.snackbar.Snackbar
+import com.leinardi.android.speeddial.SpeedDialActionItem
 import com.leinardi.android.speeddial.SpeedDialView
 import com.mikepenz.fastadapter.FastAdapter
 import com.mikepenz.fastadapter.IAdapter
@@ -22,8 +23,10 @@ import com.mikepenz.fastadapter.helpers.ActionModeHelper
 import com.mikepenz.fastadapter.select.SelectExtension
 import com.mikepenz.fastadapter.select.getSelectExtension
 import com.mikepenz.iconics.IconicsDrawable
+import com.mikepenz.iconics.IconicsSize
 import com.mikepenz.iconics.typeface.library.googlematerial.GoogleMaterial
 import com.mikepenz.iconics.utils.colorInt
+import com.mikepenz.iconics.utils.toIconicsSizeDp
 import com.mikepenz.materialize.util.UIUtils
 import com.yopers.renee.BucketItem
 import com.yopers.renee.MainActivity
@@ -68,6 +71,7 @@ class BucketListFragment: Fragment() {
     private val coroutineScope = CoroutineScope(Dispatchers.Main + parentJob)
 
     private val taskBox: Box<Task> = ObjectBox.boxStore.boxFor()
+    private lateinit var optionsMenu: Menu
 
     companion object {
 
@@ -100,7 +104,19 @@ class BucketListFragment: Fragment() {
         super.onActivityCreated(savedInstanceState)
         Timber.tag("Minio: List Fragment")
 
-        speedDial.inflate(R.menu.fab)
+        speedDial.addActionItem(
+            SpeedDialActionItem.Builder(
+                R.id.fab_upload_object,
+                IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_file_upload)
+            ).create()
+        )
+        speedDial.addActionItem(
+            SpeedDialActionItem.Builder(
+                R.id.fab_create_directory,
+                IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_create_new_folder)
+            ).create()
+        )
+
         speedDial.setOnActionSelectedListener(SpeedDialView.OnActionSelectedListener { actionItem ->
             when (actionItem.id) {
                 R.id.fab_upload_object -> {
@@ -281,6 +297,10 @@ class BucketListFragment: Fragment() {
 
                             WorkManager.getInstance(context).enqueue(syncWorkRequest)
 
+                            // Update menu
+                            optionsMenu.findItem(R.id.menuDisableSync).isVisible = true
+                            optionsMenu.findItem(R.id.menuEnableSync).isVisible = false
+
                             Snackbar.make(
                                 activity!!.findViewById(R.id.root_layout),
                                 "Added sync",
@@ -387,17 +407,24 @@ class BucketListFragment: Fragment() {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.options, menu)
+        Timber.i("Create options menu")
+
+        optionsMenu = menu
+        val enableSync = menu.findItem(R.id.menuEnableSync)
+        val disableSync = menu.findItem(R.id.menuDisableSync)
+
+        disableSync.icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync).actionBar().colorInt(Color.WHITE)
+        enableSync.icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync_disabled).actionBar().colorInt(Color.WHITE)
 
         // Check if current bucket (path) has been synchronized
         val task = taskBox.query().equal(Task_.source, "$selectedBucket/$selectedBucketPrefix").build().findFirst()
 
         // Assign menu item sync based on that
         if (task != null) {
-            menu.findItem(R.id.menuSync).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync).actionBar().colorInt(Color.WHITE)
+            disableSync.isVisible = true
         } else {
-            menu.findItem(R.id.menuSync).icon = IconicsDrawable(context!!).icon(GoogleMaterial.Icon.gmd_sync_disabled).actionBar().colorInt(Color.WHITE)
+            enableSync.isVisible = true
         }
-
 
         super.onCreateOptionsMenu(menu, inflater)
     }
@@ -405,22 +432,47 @@ class BucketListFragment: Fragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle item selection
         return when (item.itemId) {
-            R.id.menuSync-> {
+            R.id.menuEnableSync -> {
                 Timber.i("Enable sync for given path ${selectedBucket}/${selectedBucketPrefix}")
-                showSyncDialog()
+                showEnableSyncDialog()
+                true
+            }
+            R.id.menuDisableSync -> {
+                Timber.i("Disable sync for given path ${selectedBucket}/${selectedBucketPrefix}")
+                showDisableSyncDialog()
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
     }
 
-    private fun showSyncDialog() {
+    private fun showEnableSyncDialog() {
         MaterialDialog(context!!).show {
             title(text = "Choose Sync Target")
             message(text = "Please select a folder to which you want to sync contents of '${selectedBucket}/${selectedBucketPrefix}'")
             positiveButton (text = "Select") { dialog ->
                 showDestinationPicker()
             }
+        }
+    }
+
+    private fun showDisableSyncDialog() {
+        MaterialDialog(context!!).show {
+            title(text = "Confirm Action")
+            message(text = "Are you sure you want to remove sync job?")
+            positiveButton (text = "Confirm") { dialog ->
+                // Check if current bucket (path) has been synchronized
+                val task = taskBox.query().equal(Task_.source, "$selectedBucket/$selectedBucketPrefix").build().findFirst()
+
+                // Assign menu item sync based on that
+                if (task != null) {
+                    taskBox.remove(task.id)
+                }
+
+                optionsMenu.findItem(R.id.menuEnableSync).isVisible = true
+                optionsMenu.findItem(R.id.menuDisableSync).isVisible = false
+            }
+            negativeButton(text = "Cancel")
         }
     }
 

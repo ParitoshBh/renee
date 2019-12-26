@@ -88,7 +88,7 @@ class SyncTasksFragment: Fragment() {
 
                 // Remove task from work manager queue
                 WorkManager.getInstance(context).cancelWorkById(UUID.fromString(item.taskID!!))
-                Timber.i("Removed task from WorkManaget queue")
+                Timber.i("Removed task from WorkManager queue")
 
                 // Remove task from database
                 taskBox.remove(item.id!!)

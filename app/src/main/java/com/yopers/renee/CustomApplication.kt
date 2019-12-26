@@ -12,7 +12,7 @@ class CustomApplication: Application() {
         super.onCreate()
 
         ObjectBox.init(this)
-//        Bugsnag.init(this)
+        Bugsnag.init(this)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }

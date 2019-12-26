@@ -51,6 +51,7 @@ import moe.feng.common.view.breadcrumbs.BreadcrumbsView
 import moe.feng.common.view.breadcrumbs.DefaultBreadcrumbsCallback
 import moe.feng.common.view.breadcrumbs.model.BreadcrumbItem
 import timber.log.Timber
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class BucketListFragment: Fragment() {
@@ -498,7 +499,15 @@ class BucketListFragment: Fragment() {
 
                 // Assign menu item sync based on that
                 if (task != null) {
+                    Timber.i("Remove task id ${task.taskId}")
+
+                    // Remove task from work manager queue
+                    WorkManager.getInstance(context).cancelWorkById(UUID.fromString(task.taskId!!))
+                    Timber.i("Removed task from WorkManager queue")
+
+                    // Remove task from database
                     taskBox.remove(task.id)
+                    Timber.i("Removed task from database")
                 }
 
                 optionsMenu.findItem(R.id.menuEnableSync).isVisible = true

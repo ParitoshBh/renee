@@ -1,6 +1,8 @@
 package com.yopers.renee.background
 
 import android.content.Context
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.yopers.renee.ObjectBox
@@ -18,6 +20,7 @@ import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.equal
 import timber.log.Timber
+import java.io.File
 
 class SyncManager(appContext: Context, workerParams: WorkerParameters): Worker(appContext, workerParams) {
     override fun doWork(): Result {
@@ -45,6 +48,8 @@ class SyncManager(appContext: Context, workerParams: WorkerParameters): Worker(a
 
     private fun beginSync(minioClient: MinioClient, bucketPath: String, destination: String) {
         var bucketObjects: List<io.minio.Result<Item>> = emptyList()
+        var bucketMap : HashMap<String, Int> = HashMap<String, Int>()
+
         try {
             bucketObjects = minioClient.listObjects("music", "", false).toList()
             bucketObjects.forEach {
@@ -56,10 +61,36 @@ class SyncManager(appContext: Context, workerParams: WorkerParameters): Worker(a
                     minioClient = minioClient,
                     downloadLocation = destination
                 )
+
+                // Build bucket map
+                bucketMap.set(it.get().objectName(), it.hashCode())
             }
+
+            // Remove objects not in source
+            syncDestination(bucketMap, destination)
+
             Timber.i("Bucket objects $bucketObjects")
         } catch (e: MinioException) {
             Timber.i("Exception occurred ${e}")
+        }
+    }
+
+    private fun syncDestination(bucketMap: HashMap<String, Int>, destination: String) {
+        Timber.i("Check destination path for any deletions")
+        val pickedDir = DocumentFile.fromTreeUri(applicationContext, destination.toUri())
+
+        pickedDir?.listFiles()?.forEach {
+            if (bucketMap.get(it.name) == null) {
+                // Delete file - removed from source
+                Timber.i("Delete file '${it.name}'. File status - ${bucketMap.get(it.name)}")
+
+                // Attempt file deletion
+                if (it.delete()) {
+                    Timber.i("Deleted file")
+                } else {
+                    Timber.i("Unable to delete file")
+                }
+            }
         }
     }
 }
